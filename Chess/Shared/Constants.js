@@ -1,4 +1,7 @@
 /*Global constants*/
+
+import { createRand64 } from './Perft.js';
+
 //Colors
 const white = 1;
 const black = 0;
@@ -103,3 +106,14 @@ const deBruijnIndex = [
   46, 26, 40, 15, 34, 20, 31, 10,
   25, 14, 19,  9, 13,  8,  7,  6
 ];
+
+
+export {
+  white, black, none, pawn, knight, bishop, rook, queen, king,
+  standardPieceValues,
+  noFlag, enPassantFlag, castleFlag, pawnTwoMoveFlag,
+  promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag,
+  seedRandom, rand64,
+  rookMagics, rookShifts, bishopMagics, bishopShifts,
+  deBruijn64, deBruijnIndex
+};

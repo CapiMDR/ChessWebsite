@@ -1,6 +1,9 @@
 //A zobrist key class (64 bits) for mapping a whole board position to a look-up table
 //Used for transposition table during bot searches
-class Zobrist{
+import { Piece } from './Piece.js';
+import {white, black, none, rand64} from './Constants.js';
+
+export class Zobrist{
   static computeZobristHash(board) {
     let hash = 0n;
   

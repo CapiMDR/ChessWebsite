@@ -1,5 +1,5 @@
 //Acts as a bundle to store irreversible aspects of a position on a board
-class GameState{
+export class GameState{
   constructor(enPassantFile, plyCounter, hasCastleRight, capturedPieceType, zobristKey){
     this.enPassantFile=enPassantFile;
     this.plyCounter=plyCounter;

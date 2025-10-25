@@ -6,7 +6,7 @@ Represented as 16 bits (FFFF TTTTTT SSSSSS):
 */
 //Note: a8-a8 = invalid move
 
-class Move{
+export class Move{
   static newMove(startSqr, targetSqr ,flag=0b0000){
     return startSqr | targetSqr<<6 | flag<<12;
   }
@@ -22,7 +22,6 @@ class Move{
   static flag(move){
     return (move & this.flagMask) >> 12;
   }
-  
   
   //Returns what the captured piece would be if the move were played
   //Note: the move must not have been played already

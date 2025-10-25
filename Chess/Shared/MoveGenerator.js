@@ -1,5 +1,12 @@
 //Creates all legal moves for the player to move given a board
-class MoveGenerator{  
+
+import { BoardUtil } from './BoardUtil.js';
+import { BBUtil } from './BBUtil.js';
+import { Piece } from './Piece.js';
+import { Move } from './Move.js';
+import {bishop, rook, queen, none, white, pawnTwoMoveFlag, promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag} from './Constants.js';
+
+export class MoveGenerator{  
   initialize(board, onlyCaptures=false){
     //Stores all the pin rays to detect which pieces are pinned (if they are on a pin ray)
     this.pinRaysMask=0n;
