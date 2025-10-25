@@ -1,15 +1,7 @@
-html, body {
-  margin: 0;
-  padding: 0;
-}
 canvas {
   display: block;
   border-radius: 1%;
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
-}
-
-*{
-  box-sizing: border-box;
 }
 
 #canvasContainer {
@@ -79,18 +71,6 @@ canvas {
   clear: both;
 }
 
-#UIRow{
-  display:flex; 
-  justify-content:center; 
-  align-items:center;
-  height:10vh;
-  width:75vw;
-  padding: 1%;
-  background-color: rgba(245, 245, 245, 1);
-  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
-  gap: 10px;
-}
-
 .styledButton{
   border: none;
   cursor: pointer;
@@ -101,27 +81,6 @@ canvas {
 .btn-large{ 
   padding: 15px 30px; 
   font-size: 14px; 
-}
-
-.btn-start{
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-  padding: 15px 30px; 
-  font-size: 32px;
-  background-color: rgba(237,34,93,1);
-  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
-  color: white;
-}
-
-.btn-start:hover{
-  transform: scale(1.1);
-  background-color: #FA4579;
-}
-
-.styledButton:hover{
-  transform: scale(1.1);
-  background-color: rgba(255, 255, 255, 1);
 }
 
 .styledTextField{

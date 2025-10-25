@@ -1,12 +1,25 @@
-const express = require('express');
-const https = require('https');
-const path = require('path');
-const { Server } = require('socket.io');
-const fs = require('fs');
-const os = require('os');
-const cors = require('cors');
+//Node.js imports
+import express from "express";
+import https from "https";
+import path from "path";
+import {Server} from "socket.io";
+import fs from "fs";
+import os from "os";
+import cors from "cors";
+import { fileURLToPath  } from 'url';
+import { dirname  } from 'path';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const app = express();
+
+//Chess app imports
+import { Board } from '../Shared/Board.js';
+import { MoveGenerator } from '../Shared/MoveGenerator.js';
+const myBoard = new Board();
+myBoard.fillBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+const myMoveGen = new MoveGenerator();
+const myMoves = myMoveGen.generateMoves(myBoard);
 
 //Certificates for https (only stored inside project for development purposes). These are self-generated
 const options = {
@@ -55,9 +68,10 @@ app.use(cors({
   credentials: true
 }));
 
-//Serving files
+//Serving files to the clients
 app.use(express.static(__dirname));
 app.use('/assets', express.static(path.join(__dirname, '../Assets')));
+app.use('/shared', express.static(path.join(__dirname, '../Shared')));
 app.use(express.static(path.join(__dirname, '../Chess')));
 
 //Socket actions
@@ -89,4 +103,5 @@ server.listen(3000, '0.0.0.0', () => {
   console.log(`Server running at:`);
   console.log(`  https://localhost:3000`);
   console.log(`  https://${localIP}:3000`);
+  console.log(myMoves);
 });

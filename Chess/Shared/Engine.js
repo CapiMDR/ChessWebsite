@@ -1,6 +1,17 @@
 //Interface between player and chess board
 //Keeps track of move history to undo and calculates game result after every move
-class Engine{
+
+import { Board } from './Board.js';
+import { Move } from './Move.js';
+import { MoveGenerator } from './MoveGenerator.js';
+import { Piece } from './Piece.js';
+import { BBUtil } from './BBUtil.js';
+import { BoardUtil } from './BoardUtil.js';
+import { standardPieceValues, white, black, none, castleFlag, enPassantFlag, pawn, knight, bishop, rook, queen } from './Constants.js';
+
+const isBrowser = typeof window !== 'undefined';
+
+export class Engine{
   constructor(FEN){
     this.board = new Board();
     this.board.fillBoard(FEN);
@@ -51,13 +62,13 @@ class Engine{
   
   //Handles game over by timer running out
   handleTimeOut(){
-    gameOver_Sound.play();
+    if (isBrowser) gameOver_Sound.play();
     if(this.timers[this.clrToMove]!=undefined && this.timers[this.clrToMove].remainingTime<=0) this.result=this.getTimeOutResult(); 
   }
   
   startGame(){
     if(this.result!=GameResult.starting) return;
-    start_Sound.play();
+    if (isBrowser) start_Sound.play();
     this.result=GameResult.inProgress;
     this.runGame();
   }
@@ -156,6 +167,7 @@ class Engine{
   }
   
   playMoveSound(move){
+    if (!isBrowser) return;
     const flag=Move.flag(move);
     const targetSquare=Move.targetSqr(move);
     const capturedPiece=this.board.piecesList[targetSquare];

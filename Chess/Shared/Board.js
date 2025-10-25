@@ -1,5 +1,16 @@
 //Keeps track of the position of all pieces and current game state
-class Board{
+
+import{
+  white, black, none, pawn, knight, bishop, rook, queen, king, enPassantFlag, castleFlag, pawnTwoMoveFlag,
+  promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag
+} from './Constants.js';
+import { BoardUtil } from './BoardUtil.js';
+import { BBUtil } from './BBUtil.js';
+import { Piece } from './Piece.js';
+import { Zobrist } from './Zobrist.js';
+import { GameState } from './GameState.js';
+
+export class Board{
   constructor(){
     this.init();
   }

@@ -1,5 +1,11 @@
 //Calculates & stores movement masks for all piece types. Also holds utility functions for BitBoards
-class BBUtil {
+
+import { BoardUtil } from './BoardUtil.js';
+import {pawn, knight, bishop, rook, queen, king, white, black, 
+bishopMagics, rookMagics, bishopShifts, rookShifts, deBruijn64, deBruijnIndex } from './Constants.js';
+
+
+export class BBUtil {
   //Given a mask of moves with edges removed, returns all combinations of blocker pieces
   static generateBlockerMask(mask){
     const variations = []; 

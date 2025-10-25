@@ -196,12 +196,14 @@ function generateRandomMagic() {
 function createRand64(seed) {
   const rng = mulberry32(seed);
 
-  return function rand64() {
+  return  function rand64() {
     const high = BigInt(Math.floor(rng() * 0x100000000)); // Upper 32 bits
     const low = BigInt(Math.floor(rng() * 0x100000000));  // Lower 32 bits
     return (high << 32n) | low;
   };
 }
+
+export { createRand64 };
 
 function mulberry32(seed) {
   return function() {

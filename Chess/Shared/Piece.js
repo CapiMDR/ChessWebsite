@@ -13,8 +13,10 @@ colors
   white = 1xxx
 */
 
+import{white, black, pawn, knight, bishop, rook, queen, king} from './Constants.js';
+
 //Pieces are represented as 4 bit ints (first bit = color, last 3 bits = type)
-class Piece{
+export class Piece{
   //Returns the color of a given piece (0=black 1=white)
   static clr(piece){
     return (piece & this.colorMask) >> 3;

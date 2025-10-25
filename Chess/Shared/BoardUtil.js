@@ -1,4 +1,4 @@
-class BoardUtil{
+export class BoardUtil{
   /*Utility methods for board/squares (self explanatory)*/
   static indexToSquare(file, rank){
     return 8 * rank + file;
