@@ -23,7 +23,7 @@ canvas {
   position: absolute;
   top: 0;
   left: 0;
-  width: 700px;
+  width: 60%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 10;
@@ -54,7 +54,7 @@ canvas {
   align-items: center;
   float: left;
   height:70vh;
-  width: 10vw;
+  width: 20vw;
   gap: 10px;
 }
 
@@ -84,7 +84,7 @@ canvas {
   justify-content:center; 
   align-items:center;
   height:10vh;
-  width:60vw;
+  width:75vw;
   padding: 1%;
   background-color: rgba(245, 245, 245, 1);
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);

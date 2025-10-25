@@ -15,12 +15,11 @@ html, body {
 }
 
 #canvasContainer {
-  background-color: aqua;
   display:flex;
   align-items: center;
   justify-content: center;
-  height:800px;
-  width:800px;
+  height:70vh;
+  width:70vh;
 }
 
 #navigation{
@@ -77,12 +76,15 @@ html, body {
   font-size: 14px; 
 }
 
-.btn-start{
+.btn-larger{
+  padding: 15px 30px; 
+  font-size: 32px;
+}
+
+.btn-styled-red{
   border-radius: 5px;
   border: none;
   cursor: pointer;
-  padding: 15px 30px; 
-  font-size: 32px;
   background-color: rgba(237,34,93,1);
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
   color: white;

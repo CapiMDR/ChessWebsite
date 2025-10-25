@@ -1,6 +1,7 @@
-const boardSize=700;
-const evalBarThickness=25;
-const UISize=400;
+const windowHeight = window.innerHeight;
+const boardSize=windowHeight*0.9*0.8;
+const evalBarThickness=windowHeight*0.04;
+const UISize=windowHeight*0.6*0.8;
 const squareSize=boardSize/8;
 const UICenter=boardSize+(UISize+evalBarThickness)*0.5;
 const startFEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -332,7 +333,6 @@ function drawCapturedPieces(engine){
 function drawLegalMoves(engine,clr=color(0)){
   fill(clr);
   noStroke();
-  strokeWeight(1);
   for(let move of engine.moves){
     const startSquare=Move.startSqr(move);
     const targetSquare=Move.targetSqr(move);
