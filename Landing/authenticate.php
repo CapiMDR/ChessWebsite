@@ -17,9 +17,8 @@ if(isValidAccount($user, $password)){
     echo "invalid";
 }
 
-//Validando credenciales con la cuenta por defecto
 function isValidAccount($user, $password){
     global $savedUser;
     global $savedPassword;
-    return $user==$savedUser && $password == $savedPassword;
+    return $user == $savedUser && $password == $savedPassword;
 }

@@ -6,6 +6,12 @@ Represented as 16 bits (FFFF TTTTTT SSSSSS):
 */
 //Note: a8-a8 = invalid move
 
+import { Piece } from './Piece.js';
+import { BoardUtil } from './BoardUtil.js';
+import {white, black, none, pawn, king,
+  noFlag, enPassantFlag, castleFlag, pawnTwoMoveFlag,
+  promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag,} from './Constants.js';
+
 export class Move{
   static newMove(startSqr, targetSqr ,flag=0b0000){
     return startSqr | targetSqr<<6 | flag<<12;

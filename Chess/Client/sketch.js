@@ -1,14 +1,25 @@
+//Handles canvas (board, timers, etc) drawing and sounds
+
+import { Engine } from '../Shared/Engine.js';
+import { Timer } from '../Shared/Timer.js';
+import { BBUtil } from '../Shared/BBUtil.js';
+import { Piece } from '../Shared/Piece.js';
+import { Move } from '../Shared/Move.js';
+import { BoardUtil } from '../Shared/BoardUtil.js';
+import{  white, black, none, pawn, knight, bishop, rook, queen, king, enPassantFlag, castleFlag } from '../Shared/Constants.js';
+import { selectedSquare, dragging} from './Input.js';
+import { GameResult } from '../Shared/Engine.js';
+import { sendToServer, host, port } from './client.js';
+
 const windowHeight = window.innerHeight;
 const boardSize=windowHeight*0.9*0.8;
 const evalBarThickness=windowHeight*0.04;
 const UISize=windowHeight*0.6*0.8;
-const squareSize=boardSize/8;
+export const squareSize=boardSize/8;
 const UICenter=boardSize+(UISize+evalBarThickness)*0.5;
 const startFEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-let chess;
-let capraStar;
-let challenger;
+export let chess;
 
 let popupDiv;
 let showPopup = false;
@@ -18,11 +29,31 @@ const whiteIncrementSeconds=3;
 const blackMinutes=5;
 const blackIncrementSeconds=3;
 
-const host = window.location.hostname; //Current host ip
-const port = 3000;                       //Node server port
-const socket = io(`https://${host}:${port}`); //Url
+let wP_Icon;
+let wN_Icon;
+let wB_Icon;
+let wR_Icon;
+let wQ_Icon;
+let wK_Icon;
 
-function preload(){
+let bP_Icon;
+let bN_Icon;
+let bB_Icon;
+let bR_Icon;
+let bQ_Icon;
+let bK_Icon;
+
+let check_Glow;
+
+let capture_Sound;
+let move_Sound;
+let check_Sound;
+let gameOver_Sound;
+let castle_Sound;
+let start_Sound;
+
+
+window.preload = function() {
   wP_Icon=loadImage(`https://${host}:${port}/assets/Images/WP.png`);
   wN_Icon=loadImage(`https://${host}:${port}/assets/Images/WN.png`);
   wB_Icon=loadImage(`https://${host}:${port}/assets/Images/WB.png`);
@@ -46,11 +77,9 @@ function preload(){
   start_Sound=loadSound(`https://${host}:${port}/assets/Sounds/start.mp3`);
   
   check_Glow=loadImage(`https://${host}:${port}/assets/Images/Glow.png`);
-  
-  bookEntries=loadStrings('Book.txt');
 }
 
-function setup() {
+window.setup = function() {
   const cnv = createCanvas(boardSize+UISize, boardSize);
   cnv.parent("canvasContainer");
   popupDiv = createDiv(`
@@ -79,55 +108,6 @@ function setup() {
     popupDiv.style("display", "none");
   });
   
-  /* Web workers for AIs */
-  const ver = Date.now();
-  capraStar = new Worker(`CapraStar.js?v=${ver}`);
-  challenger = new Worker(`Challenger.js?v=${ver}`);
-  
-  capraStar.onmessage = function(e) {
-    switch(e.data.type){
-      case 'result':
-        lastEval = (chess.clrToMove==white) ? e.data.evaluation : -e.data.evaluation;
-        chess.playMove(e.data.bestMove);
-        socket.emit('sendMove', e.data.bestMove);
-      break;
-      case 'evaluation':
-        lastEval = (chess.clrToMove==white) ? e.data.evaluation : -e.data.evaluation;
-        lastBestMove = e.data.bestMove;
-        console.log("Best Move: " + Move.toString(e.data.bestMove));
-        console.log("Evaluation: " + (lastEval * 0.01).toFixed(1));
-        let pvString="";
-        for(let move of e.data.pv){
-          pvString+=Move.toString(move) + " ";
-        }
-        console.log("Principal variation: " + pvString);
-        console.log("Time taken: " + e.data.timeTaken + " ms");
-      break;
-      default: console.log("Worker log: " + e.data);
-    }
-  }; 
-  
-  openingBook=loadBookMoveEntries(bookEntries);
-  capraStar.postMessage({
-    type: 'init',
-    book: openingBook
-  });
-  
-  challenger.onmessage = function(e) {
-    switch(e.data.type){
-      case 'result':
-        lastEval = (chess.clrToMove==white) ? e.data.evaluation : -e.data.evaluation;
-        chess.playMove(e.data.bestMove);
-      break;
-      default: console.log("Worker log: " + e.data);
-    }
-  }; 
-  
-  challenger.postMessage({
-    type: 'init',
-    book: openingBook
-  });
-  
   /* Game logic */
   //Minutes & increment in seconds
   const whiteTimer=new Timer(whiteMinutes,whiteIncrementSeconds);
@@ -135,31 +115,12 @@ function setup() {
   chess = new Engine(startFEN); //Starting position, white timer, black timer
   chess.setTimers(whiteTimer, blackTimer);
 
-  //Receive move from server to playback
-  socket.on('sendMove', (move) => {
-    chess.playMove(move, false, false);
-  });
-
-  //Receive start signal from server
-  socket.on('startGame',() => {
-    startGame(false);
-  });
-
-  //Receive set position signal from server
-  socket.on('setPosition',(FEN) => {
-  chess.board.init();
-    chess.board.fillBoard(FEN.trim());
-    FENTextField.value="Position set!";
-  });
+  //Telling the server that this client is ready to begin
+  sendToServer({type: 'ready'});
 }
 
-function startGame(shouldPostToServer=true) {
-  const whiteBotCheckBox=document.getElementById("whiteBotBox");
-  const blackBotCheckBox=document.getElementById("blackBotBox");
-    
-  if(whiteBotCheckBox.checked) chess.bots[white]=capraStar;
-  if(blackBotCheckBox.checked) chess.bots[black]=capraStar;
-  if(shouldPostToServer) socket.emit('startGame');
+export function startGame() {
+  start_Sound.play();
   document.getElementById('overlay').style.display = 'none'; //Disabling shadow over canvas
   chess.startGame();
 }
@@ -216,7 +177,7 @@ function importGame() {
     }
 }
 
-function draw() {
+window.draw = function() {
   //background(251,251,251);
   background(245);
   drawBoard();
@@ -254,7 +215,7 @@ function drawBoard() {
   for (let r = 0; r < 8; r++) {
     for (let f = 0; f < 8; f++) {
       //Squares
-      isLightSquare=BoardUtil.isLightSquare(f,r);
+      const isLightSquare=BoardUtil.isLightSquare(f,r);
       fill(isLightSquare ? 240 : 100);
       rect(f * squareSize, r * squareSize, squareSize, squareSize);
       
@@ -444,7 +405,7 @@ function drawUITimers(engine){
   }
 }
 
-let promotionMenu = {
+export let promotionMenu = {
   active: false,
   x: 0,
   y: 0,
@@ -538,7 +499,7 @@ function drawArrow(fromSq, toSq, clr=color(0)) {
   pop();
 }
 
-let lastBestMove=null;
+export let lastBestMove=null;
 
 //Draws an arrow for the recommended move by CapraStar
 function drawBestMoveArrow(){
@@ -546,6 +507,25 @@ function drawBestMoveArrow(){
   const startSquare=Move.startSqr(lastBestMove);
   const targetSquare=Move.targetSqr(lastBestMove);
   drawArrow(startSquare,targetSquare, color(76,217,228));
+}
+
+export function playMoveSound(move){
+  const flag=Move.flag(move);
+  const targetSquare=Move.targetSqr(move);
+  const capturedPiece=chess.board.piecesList[targetSquare];
+  const capturedPieceType=Piece.type(capturedPiece);
+    
+  if(flag==castleFlag){
+    castle_Sound.play();
+    return;
+  }
+  
+  if(capturedPieceType!=none || flag==enPassantFlag){
+    capture_Sound.play();
+    return;
+  }
+  
+  move_Sound.play();
 }
 
 /*Debug functions*/

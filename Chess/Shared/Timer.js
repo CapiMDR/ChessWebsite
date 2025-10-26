@@ -1,4 +1,4 @@
-class Timer{
+export class Timer{
   constructor(time, increment=0) {
     this.initialTime = time*60;
     this.remainingTime = time*60;

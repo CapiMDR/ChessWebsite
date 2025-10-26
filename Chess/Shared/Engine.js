@@ -7,9 +7,8 @@ import { MoveGenerator } from './MoveGenerator.js';
 import { Piece } from './Piece.js';
 import { BBUtil } from './BBUtil.js';
 import { BoardUtil } from './BoardUtil.js';
-import { standardPieceValues, white, black, none, castleFlag, enPassantFlag, pawn, knight, bishop, rook, queen } from './Constants.js';
+import { standardPieceValues, white, black, none, pawn, knight, bishop, rook, queen } from './Constants.js';
 
-const isBrowser = typeof window !== 'undefined';
 
 export class Engine{
   constructor(FEN){
@@ -25,8 +24,6 @@ export class Engine{
     this.result=GameResult.starting;
     this.gameIsOver=false;
     
-    //Holds 2 chess bots indexed by their color (0=black, 1=white)
-    this.bots=[undefined, undefined];
     //Holds 2 timers indexed by color
     this.timers=[];
     
@@ -44,31 +41,13 @@ export class Engine{
     if(blackTimer!=undefined) blackTimer.engineOwner=this;
   }
   
-  handleBots(){
-    if(this.result!=GameResult.inProgress) return;
-    //If there is a bot of the current color, let it make a move. Otherwise the engine waits for player input
-    if(this.bots[this.clrToMove]==undefined) return;
-    
-    //If the player tried undoing a move, don't allow the bot to play again
-    //This is because transposition tables make it play immediately making it impossible to undo
-    if(this.isUndoingMoves()) return;
-    
-    this.bots[this.clrToMove].postMessage({
-      type: 'search',
-      fen: this.board.toFEN(true, true),
-      repetitionHistory: this.board.repetitionHistory
-    });
-  }
-  
   //Handles game over by timer running out
   handleTimeOut(){
-    if (isBrowser) gameOver_Sound.play();
     if(this.timers[this.clrToMove]!=undefined && this.timers[this.clrToMove].remainingTime<=0) this.result=this.getTimeOutResult(); 
   }
   
   startGame(){
     if(this.result!=GameResult.starting) return;
-    if (isBrowser) start_Sound.play();
     this.result=GameResult.inProgress;
     this.runGame();
   }
@@ -91,18 +70,12 @@ export class Engine{
     if(this.isThreefoldRepetition()) this.result=GameResult.drawByRepetition;
     if(this.isInsufficientMaterial()) this.result=GameResult.insufficientMaterial;
     this.manageTimers();
-    if(this.moveGenerator.inCheck) check_Sound.play();
-    this.handleBots();
-    if(this.result!=GameResult.inProgress && !this.gameIsOver){
-      this.gameIsOver=true;
-      gameOver_Sound.play();
-    }
+    if(this.result!=GameResult.inProgress && !this.gameIsOver) this.gameIsOver=true;
   }
   
   //For both players & bots, final moves must be made through this function for the game to update correctly
   //Moves can be played directly on the board.makeMove for evaluation though
-  playMove(move, redoingMove=false, shouldPostToServer=false){
-    this.playMoveSound(move);
+  playMove(move, redoingMove=false){
     this.updateCapturedArrays(move,false);
     this.board.makeMove(move);
     this.moveHistory.push(move);
@@ -118,7 +91,6 @@ export class Engine{
       movesList.appendChild(moveListItem);
     }
     moveListItems[moveListItems.length-1].textContent+=" " + moveString + " ";
-    if(shouldPostToServer) socket.emit('sendMove', move);
   }
   
   //Undoes the last played move, to undo any move without updating results use board.unmakeMove instead
@@ -128,7 +100,6 @@ export class Engine{
     this.redoHistory.push(moveToUndo);
     
     this.board.unmakeMove(moveToUndo);
-    this.playMoveSound(moveToUndo);
     this.updateCapturedArrays(moveToUndo,true);
     this.runGame();
     
@@ -164,26 +135,6 @@ export class Engine{
     if(this.redoHistory.length==0) return;
     const moveToRedo=this.redoHistory.pop();
     this.playMove(moveToRedo,true);
-  }
-  
-  playMoveSound(move){
-    if (!isBrowser) return;
-    const flag=Move.flag(move);
-    const targetSquare=Move.targetSqr(move);
-    const capturedPiece=this.board.piecesList[targetSquare];
-    const capturedPieceType=Piece.type(capturedPiece);
-      
-    if(flag==castleFlag){
-      castle_Sound.play();
-      return;
-    }
-    
-    if(capturedPieceType!=none || flag==enPassantFlag){
-      capture_Sound.play();
-      return;
-    }
-    
-    move_Sound.play();
   }
   
   isUndoingMoves(){
@@ -322,8 +273,8 @@ export class Engine{
   }
 }
 
-const GameResult = Object.freeze({
-  starting: "Starting game...",
+export const GameResult = Object.freeze({
+  starting: "Waiting for another player...",
   inProgress: "In Progress",
   whiteCheckmated: "White Checkmated",
   blackCheckmated: "Black Checkmated",

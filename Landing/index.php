@@ -8,11 +8,11 @@
         if (!isset($_SESSION['user'])){
             header('Location: login.php');
         }
-    ?>
+  ?>
   <head>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/addons/p5.sound.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="Assets/Css/style.css">
+    <link rel="stylesheet" type="text/css" href="../Assets/Css/style.css">
     <meta charset="utf-8" />
   </head>
   <body>
@@ -27,13 +27,13 @@
       <div id="menuContainer">
         <div id="leftColumn" class="styledBox">
           <div id="menuBTNS">
-            <form action="/ChessWebsite/Chess/index.php" method="GET">
+            <form action="/ChessWebsite/Chess/Client/gameView.php" method="GET">
               <button class="styledButton btn-large" type="submit">Play online</button>
             </form>
-            <form action="/ChessWebsite/Chess/index.php" method="GET">
+            <form action="/ChessWebsite/Chess/Client/gameView.php" method="GET">
               <button class="styledButton btn-large" type="submit">Play vs bot</button>
             </form>
-            <form action="/ChessWebsite/Chess/index.php" method="GET">
+            <form action="/ChessWebsite/Chess/Client/gameView.php" method="GET">
               <button class="styledButton btn-large" type="submit">Play local</button>
             </form>
           </div>
