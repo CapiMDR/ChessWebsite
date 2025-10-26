@@ -9,6 +9,7 @@ import { BBUtil } from './BBUtil.js';
 import { Piece } from './Piece.js';
 import { Zobrist } from './Zobrist.js';
 import { GameState } from './GameState.js';
+import { Move } from './Move.js';
 
 export class Board{
   constructor(){

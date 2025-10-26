@@ -14,12 +14,9 @@ const __dirname = dirname(__filename);
 const app = express();
 
 //Chess app imports
-import { Board } from '../Shared/Board.js';
-import { MoveGenerator } from '../Shared/MoveGenerator.js';
-const myBoard = new Board();
-myBoard.fillBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-const myMoveGen = new MoveGenerator();
-const myMoves = myMoveGen.generateMoves(myBoard);
+import { Engine } from '../Shared/Engine.js';
+const engine = new Engine("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+engine.startGame();
 
 //Certificates for https (only stored inside project for development purposes). These are self-generated
 const options = {
@@ -70,32 +67,42 @@ app.use(cors({
 
 //Serving files to the clients
 app.use(express.static(__dirname));
-app.use('/assets', express.static(path.join(__dirname, '../Assets')));
+app.use('/assets', express.static(path.join(__dirname, '../../Assets')));
 app.use('/shared', express.static(path.join(__dirname, '../Shared')));
 app.use(express.static(path.join(__dirname, '../Chess')));
 
+let onlineUsers = 0; //Number of clients connected to this server
+
 //Socket actions
 io.on('connection', (socket) => {
-  console.log('New user connected');
-
-  socket.on('sendMove', (move) => {
-    console.log(`Received move: ${move}`);
-    socket.broadcast.emit('sendMove', move);
-  });
-
-  socket.on('startGame', () => {
-    console.log('Starting game');
-    socket.broadcast.emit('startGame');
-  });
-
-  socket.on('setPosition', (FEN) => {
-    console.log(`Setting position to: ${FEN}`);
-    socket.broadcast.emit('setPosition', FEN);
-  });
-
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+    onlineUsers--;
+    console.log('User disconnected ' + onlineUsers);
   });
+
+  socket.on('message', (msg) => {
+    switch(msg.type){
+      //New client connected and ready to begin
+      case 'ready':
+        onlineUsers++;
+        console.log('New user connected ' + onlineUsers);
+        //Once 2 users join the game, start it
+        if(onlineUsers==2){
+          console.log("Staring game")
+          io.emit('message', {type: 'startGame'});
+        } 
+      break;
+
+      //If the server receives a move from a client, validate it and resend it to everyone
+      case 'move':
+        console.log('Receive move ' + msg.move);
+        //TODO: Validate client move before broadcasting
+        io.emit('message', {type: 'move', move: msg.move});
+      break;
+      default: console.log("Invalid message type from a client");    
+    }    
+  });
+
 });
 
 //Server start
@@ -103,5 +110,4 @@ server.listen(3000, '0.0.0.0', () => {
   console.log(`Server running at:`);
   console.log(`  https://localhost:3000`);
   console.log(`  https://${localIP}:3000`);
-  console.log(myMoves);
 });

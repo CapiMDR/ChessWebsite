@@ -193,7 +193,7 @@ function generateRandomMagic() {
 }
 
 /*Seeded random 64 bit number generator*/
-function createRand64(seed) {
+export function createRand64(seed) {
   const rng = mulberry32(seed);
 
   return  function rand64() {
@@ -202,8 +202,6 @@ function createRand64(seed) {
     return (high << 32n) | low;
   };
 }
-
-export { createRand64 };
 
 function mulberry32(seed) {
   return function() {

@@ -3,14 +3,13 @@
     session_start();
 ?>
 
-
 <html lang="en">
   <head>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/addons/p5.sound.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="../Assets/Css/style.css">
-    <link rel="stylesheet" type="text/css" href="../Assets/Css/game.css">
+    <link rel="stylesheet" type="text/css" href="../../Assets/Css/style.css">
+    <link rel="stylesheet" type="text/css" href="../../Assets/Css/game.css">
     <meta charset="utf-8" />
   </head>
   <body>
@@ -25,7 +24,7 @@
         <input type="checkbox" id="whiteBotBox"/>
         <p>Black bot</p>
         <input type="checkbox" id="blackBotBox"/>
-        <form action="../logout.php" method="POST">
+        <form action="../../Landing/logout.php" method="POST">
           <?php echo htmlspecialchars($_SESSION['user']); ?>
           <button class="styledButton" type="submit">Log Out</button>
         </form>
@@ -51,20 +50,7 @@
     </div>
     <main>
     </main>
-    <script src="sketch.js"></script>
-    <script src="Perft.js"></script>
-    <script src="Constants.js"></script>
-    <script src="Piece.js"></script>
-    <script src="Zobrist.js"></script>
-    <script src="Board.js"></script>
-    <script src="Move.js"></script>
-    <script src="GameState.js"></script>
-    <script src="BoardUtil.js"></script>
-    <script src="BBUtil.js"></script>
-    <script src="MoveGenerator.js"></script>
-    <script src="Engine.js"></script>
-    <script src="Input.js"></script>
-    <script src="Timer.js"></script>
-    <script src="OpeningBook.js"></script>
+    <script type="module" src="./sketch.js"></script>
+    <script type ="module" src="./Input.js"></script>
   </body>
 </html>
