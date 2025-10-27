@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();
 
-//Certificates for https (only stored inside project for development purposes). These are self-generated
+//Certificates for https (only stored inside project for development purposes)
 const options = {
   key: fs.readFileSync('Certs/server.key'),
   cert: fs.readFileSync('Certs/server.crt')
@@ -69,67 +69,80 @@ app.use('/assets', express.static(path.join(__dirname, '../../Assets')));
 app.use('/shared', express.static(path.join(__dirname, '../Shared')));
 app.use(express.static(path.join(__dirname, '../Chess')));
 
-let onlineUsers = 0; //Number of clients connected to this server
-let gameHasStarted = false; //When a user connects, if game has started sync its board to server board
+let onlineUsers = 0;
+let gameHasStarted = false;
 
-const players = {}; //socket.id -> { color, name?, reconnected? }
-let colorAssignments = { [white]: null, [black]: null }; //track which socket has which color
+// Map playerId -> { color, socketId }
+const players = {};
+let colorAssignments = { [white]: null, [black]: null };
+let originalPlayers = { [white]: null, [black]: null };
 
 //Socket actions
 io.on('connection', (socket) => {
+  const playerId = socket.handshake.query.playerId;
+  if (!playerId) {
+    console.warn(`Connection without playerId rejected`);
+    socket.disconnect();
+    return;
+  }
+  console.log(`Player connected: ${playerId} (socket: ${socket.id}). Online: ${onlineUsers}`);
+
   socket.on('disconnect', () => {
     onlineUsers--;
-    console.log(`User disconnected (${socket.id}). Online: ${onlineUsers}`);
+    console.log(`Player ${playerId} disconnected (socket: ${socket.id})`);
 
-    //Mark the player's slot as free if they were a player
-    for (const c of [white, black]) {
-      if (colorAssignments[c] === socket.id) {
-        colorAssignments[c] = null;
-      }
-    }
+    //Clearing color assignment if game hasn't started yet when a player disconnects
+    if (gameHasStarted) return;
+    if (colorAssignments[white] === playerId) colorAssignments[white] = null;
+    if (colorAssignments[black] === playerId) colorAssignments[black] = null;
   });
 
   socket.on('message', (msg) => {
-    switch(msg.type){
+    switch (msg.type) {
       case 'ready':
         onlineUsers++;
         console.log(`New user ready (${socket.id}). Online: ${onlineUsers}`);
 
-        //If the player is new, try assigning them a new color
-        const assignedColor = assignColor(socket);
-        players[socket.id] = { color: assignedColor };
+        //Assign color to the player. If both colors taken, assign spectator. If reconnecting, assign original color.
+        const assignedColor = assignColor(playerId);
+        players[playerId] = { color: assignedColor, socketId: socket.id };
+
         socket.emit("message", { type: "color", color: assignedColor });
 
-        if(gameHasStarted){
-          //If the game has already started, tell the client to sync its board with the server's and start its game
-          const gameStatus = getGameStatus();
-          socket.emit('message', {type: 'startGame'});
-          socket.emit('message', {type: 'syncGame', gameStatus: gameStatus})
+        if (gameHasStarted) {
+            const gameStatus = getGameStatus();
+            socket.emit('message', { type: 'startGame' });
+            socket.emit('message', { type: 'syncGame', gameStatus });
           return;
         }
-        
-        //Once 2 users join the game, start it
+
+        //Start game when both players ready (both colors assigned)
         const bothReady = colorAssignments[white] && colorAssignments[black];
-        if (bothReady && !gameHasStarted) {
-          console.log("Starting game");
-          startGame();
-          gameHasStarted = true;
-          io.emit("message", { type: "startGame" });
-        }
-      break;
+        if (!bothReady) return;
+        startGame();
+        gameHasStarted = true;
+
+        //Keep track of the two players who started the game
+        originalPlayers[white] = colorAssignments[white];
+        originalPlayers[black] = colorAssignments[black];
+
+        io.emit("message", { type: "startGame" });
+        break;
 
       case 'move':
-        const clientMove = msg.move;
+        const move = msg.move;
         //If the server receives a move from a client, validate it and resend it to everyone
-        if(!isLegalMove(clientMove)) return;
+        if (!isLegalMove(move)) return;
 
         const gameStatus = getGameStatus();
-        io.emit('message', {type: 'move', move: clientMove, gameStatus: gameStatus});
-        //If the game is over after the move, notify clients
-        if(gameIsOver()) io.emit('message', {type: 'endGame'});
-      break;
+        io.emit('message', { type: 'move', move, gameStatus });
 
-      default: console.log("Invalid message type from a client");    
+        //If the game is over after the move, notify clients
+        if (gameIsOver()) io.emit('message', { type: 'endGame' });
+        break;
+
+      default:
+        console.log("Invalid message type");
     }
   });
 });
@@ -141,20 +154,29 @@ server.listen(3000, '0.0.0.0', () => {
   console.log(`URL:  https://${localIP}/ChessWebsite/Landing`);
 });
 
-function assignColor(socket){
-  //Assign random color if not already taken
-  let assignedColor = null;
+function assignColor(playerId) {
+  if (gameHasStarted) {
+    //Only original players can rejoin
+    for (const color of [white, black]) {
+      if (originalPlayers[color] === playerId) {
+        colorAssignments[color] = playerId;
+        console.log(`Original ${color} player reconnected`);
+        return color;
+      }
+    }
+    return "spectator";
+  }
 
+  //Before game starts assign available color
   const availableColors = [];
   if (!colorAssignments[white]) availableColors.push(white);
   if (!colorAssignments[black]) availableColors.push(black);
 
   if (availableColors.length > 0) {
-    assignedColor = availableColors[Math.floor(Math.random() * availableColors.length)];
-    colorAssignments[assignedColor] = socket.id;
-  } else {
-    //Both colors taken, make them a spectator
-    assignedColor = "spectator";
+    const assigned = availableColors[Math.floor(Math.random() * availableColors.length)];
+    colorAssignments[assigned] = playerId;
+    return assigned;
   }
-  return assignedColor;
+
+  return "spectator";
 }
