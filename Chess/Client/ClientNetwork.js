@@ -3,7 +3,18 @@ import { receiveColorFromServer, handleGameStart, handleGameEnd, handleServerSyn
 
 export const host = window.location.hostname; //Current host ip
 export const port = 3000; //Node server port
-const socket = io(`https://${host}:${port}`); //Url
+
+//Generate or retrieve unique player ID
+let playerId = localStorage.getItem("playerId");
+if (!playerId) {
+  playerId = crypto.randomUUID();
+  localStorage.setItem("playerId", playerId);
+}
+
+
+const socket = io(`https://${host}:${port}`, {
+  query: { playerId }
+}); //Url
 
 export function sendToServer(msgContent){
     socket.emit('message', msgContent);
