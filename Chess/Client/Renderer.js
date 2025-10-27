@@ -1,7 +1,4 @@
 //Handles canvas (board, timers, etc) drawing and sounds
-
-import { Engine } from '../Shared/Engine.js';
-import { Timer } from '../Shared/Timer.js';
 import { BBUtil } from '../Shared/BBUtil.js';
 import { Piece } from '../Shared/Piece.js';
 import { Move } from '../Shared/Move.js';
@@ -9,25 +6,16 @@ import { BoardUtil } from '../Shared/BoardUtil.js';
 import{  white, black, none, pawn, knight, bishop, rook, queen, king, enPassantFlag, castleFlag } from '../Shared/Constants.js';
 import { selectedSquare, dragging} from './Input.js';
 import { GameResult } from '../Shared/Engine.js';
-import { sendToServer, host, port } from './client.js';
+import { engine, setupGame, clientColor } from './ClientGame.js';
+import { sendToServer, host, port } from './ClientNetwork.js';
 
 const windowHeight = window.innerHeight;
 const boardSize=windowHeight*0.9*0.8;
-const evalBarThickness=windowHeight*0.04;
+const evalBarThickness=windowHeight*0.03;
 const UISize=windowHeight*0.6*0.8;
 export const squareSize=boardSize/8;
 const UICenter=boardSize+(UISize+evalBarThickness)*0.5;
-const startFEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-export let chess;
-
-let popupDiv;
-let showPopup = false;
-
-const whiteMinutes=5;
-const whiteIncrementSeconds=3;
-const blackMinutes=5;
-const blackIncrementSeconds=3;
 
 let wP_Icon;
 let wN_Icon;
@@ -48,162 +36,88 @@ let check_Glow;
 let capture_Sound;
 let move_Sound;
 let check_Sound;
-let gameOver_Sound;
+export let gameOver_Sound;
+export let start_Sound;
 let castle_Sound;
-let start_Sound;
-
 
 window.preload = function() {
-  wP_Icon=loadImage(`https://${host}:${port}/assets/Images/WP.png`);
-  wN_Icon=loadImage(`https://${host}:${port}/assets/Images/WN.png`);
-  wB_Icon=loadImage(`https://${host}:${port}/assets/Images/WB.png`);
-  wR_Icon=loadImage(`https://${host}:${port}/assets/Images/WR.png`);
-  wQ_Icon=loadImage(`https://${host}:${port}/assets/Images/WQ.png`);
-  wK_Icon=loadImage(`https://${host}:${port}/assets/Images/WK.png`);
+  const baseURL = `https://${host}:${port}/assets`;
+  const imageUrl = `${baseURL}/Images`
+  const soundUrl = `${baseURL}/Sounds`
+
+  wP_Icon=loadImage(`${imageUrl}/WP.png`);
+  wN_Icon=loadImage(`${imageUrl}/WN.png`);
+  wB_Icon=loadImage(`${imageUrl}/WB.png`);
+  wR_Icon=loadImage(`${imageUrl}/WR.png`);
+  wQ_Icon=loadImage(`${imageUrl}/WQ.png`);
+  wK_Icon=loadImage(`${imageUrl}/WK.png`);
 
 
-  bP_Icon=loadImage(`https://${host}:${port}/assets/Images/BP.png`);
-  bN_Icon=loadImage(`https://${host}:${port}/assets/Images/BN.png`);
-  bB_Icon=loadImage(`https://${host}:${port}/assets/Images/BB.png`);
-  bR_Icon=loadImage(`https://${host}:${port}/assets/Images/BR.png`);
-  bQ_Icon=loadImage(`https://${host}:${port}/assets/Images/BQ.png`);
-  bK_Icon=loadImage(`https://${host}:${port}/assets/Images/BK.png`);
+  bP_Icon=loadImage(`${imageUrl}/BP.png`);
+  bN_Icon=loadImage(`${imageUrl}/BN.png`);
+  bB_Icon=loadImage(`${imageUrl}/BB.png`);
+  bR_Icon=loadImage(`${imageUrl}/BR.png`);
+  bQ_Icon=loadImage(`${imageUrl}/BQ.png`);
+  bK_Icon=loadImage(`${imageUrl}/BK.png`);
   
-  capture_Sound=loadSound(`https://${host}:${port}/assets/Sounds/captures.mp3`);
-  move_Sound=loadSound(`https://${host}:${port}/assets/Sounds/move.mp3`);
-  check_Sound=loadSound(`https://${host}:${port}/assets/Sounds/check.mp3`);
-  gameOver_Sound=loadSound(`https://${host}:${port}/assets/Sounds/gameOver.mp3`);
-  castle_Sound=loadSound(`https://${host}:${port}/assets/Sounds/castle.mp3`);
-  start_Sound=loadSound(`https://${host}:${port}/assets/Sounds/start.mp3`);
+  capture_Sound=loadSound(`${soundUrl}/captures.mp3`);
+  move_Sound=loadSound(`${soundUrl}/move.mp3`);
+  check_Sound=loadSound(`${soundUrl}/check.mp3`);
+  gameOver_Sound=loadSound(`${soundUrl}/gameOver.mp3`);
+  castle_Sound=loadSound(`${soundUrl}/castle.mp3`);
+  start_Sound=loadSound(`${soundUrl}/start.mp3`);
   
-  check_Glow=loadImage(`https://${host}:${port}/assets/Images/Glow.png`);
+  check_Glow=loadImage(`${imageUrl}/Glow.png`);
 }
 
 window.setup = function() {
   const cnv = createCanvas(boardSize+UISize, boardSize);
   cnv.parent("canvasContainer");
-  popupDiv = createDiv(`
-    <h3>Controls</h3>
-    <ul>
-      <li><b>W</b>: Evaluate with CapraStar</li>
-      <li><b>S</b>: Clear evaluation</li>
-      <li><b>Z</b>: Rewind after game</li>
-      <li><b>X</b>: Fast forward after game</li>
-      <li><b>E</b>: Get FEN from position</li>
-    </ul>
-    <button id="closeBtn">Close</button>
-  `);
-  
-  popupDiv.style("background", "rgba(50,50,50,0.9)");
-  popupDiv.style("color", "white");
-  popupDiv.style("padding", "15px");
-  popupDiv.style("border-radius", "10px");
-  popupDiv.style("position", "absolute");
-  popupDiv.style("top", "60px");
-  popupDiv.style("left", "30px");
-  popupDiv.style("display", "none");
-
-  select("#closeBtn").mousePressed(() => {
-    showPopup = false;
-    popupDiv.style("display", "none");
-  });
-  
-  /* Game logic */
-  //Minutes & increment in seconds
-  const whiteTimer=new Timer(whiteMinutes,whiteIncrementSeconds);
-  const blackTimer=new Timer(blackMinutes,blackIncrementSeconds);
-  chess = new Engine(startFEN); //Starting position, white timer, black timer
-  chess.setTimers(whiteTimer, blackTimer);
-
+  setupGame();
   //Telling the server that this client is ready to begin
   sendToServer({type: 'ready'});
 }
 
-export function startGame() {
-  start_Sound.play();
-  document.getElementById('overlay').style.display = 'none'; //Disabling shadow over canvas
-  chess.startGame();
-}
-
 function redoMove() {
-  chess.redoMove();
+  engine.redoMove();
 }
 
 function undoMove() {
-  chess.undoMove();
+  engine.undoMove();
 }
 
-function togglePopup() {
-  showPopup = !showPopup;
-  popupDiv.style("display", showPopup ? "block" : "none");
-}
-
-function setupBoard() {
-  const FENTextField=document.getElementById("textTXT");
-  FEN=FENTextField.value;
-  if(FEN==""){
-    FENTextField.value="Input valid FEN string here";
-    return;
-  }
-  const fenValidity=chess.isValidFEN(FEN);
-  if(fenValidity=="Valid FEN"){
-    chess.board.init();
-    chess.board.fillBoard(FEN.trim());
-    FENTextField.value="Position set!";
-  }else{
-    FENTextField.value=fenValidity;
-  }
-
-}
-
-function restartGame() {
-  chess.restartGame();
-}
-
-function importGame() {
-  const textField=document.getElementById("textTXT");
-  inputText=textField.value;
-  if(inputText=="" || inputText=="Input moves list here"){
-    textField.value="Input moves list here";
-    return;
-  }
-  const movesString = inputText;
-  const movePattern = /\b[a-h][1-8][a-h][1-8][qrbn]?\b/g;
-    const moveArray=movesString.match(movePattern) || [];
-    chess.restartGame();
-    for(let UCImove of moveArray){
-      const move=Move.UCIToMove(UCImove, chess.board);
-      chess.playMove(move);
-    }
+export function setupBoard(FEN) {
+  engine.board.init();
+  engine.board.fillBoard(FEN.trim());
 }
 
 window.draw = function() {
   //background(251,251,251);
   background(245);
   drawBoard();
-  highlightSquares(chess, color(45,221,162,180), color(211,42,50,180));
-  drawCheckBubble(chess);
-  drawPieces(chess);
+  highlightSquares(engine, color(45,221,162,180), color(211,42,50,180));
+  drawCheckBubble(engine);
+  drawPieces(engine);
   
-  //debugView(chess);
+  //debugView(engine);
   
-  drawLegalMoves(chess, color(45,221,162,180));
+  if(clientColor==engine.clrToMove) drawLegalMoves(engine, color(45,221,162,180));
   drawBestMoveArrow();
-  drawUIText(chess);
-  drawUITimers(chess);
-  drawCapturedPieces(chess);
-  if(promotionMenu.active) drawPromotionUI(chess);
-  drawBotEval(chess);
-  drawDraggedPiece(chess);
+  drawUIText(engine);
+  drawUITimers(engine);
+  drawCapturedPieces(engine);
+  if(promotionMenu.active) drawPromotionUI(engine);
+  drawBotEval(engine);
+  drawDraggedPiece(engine);
   
   //Undo last move - rewind (z key)
   if (keyIsDown(90)) {
-    chess.undoMove();
+    engine.undoMove();
   }
   
   //Redo last undone move - fastforward (x key)
   if (keyIsDown(88)) {
-    chess.redoMove();
+    engine.redoMove();
   }
 }
 
@@ -509,10 +423,22 @@ function drawBestMoveArrow(){
   drawArrow(startSquare,targetSquare, color(76,217,228));
 }
 
+export function playSound(type){
+  switch(type){
+    case "Start": start_Sound.play();
+    break;
+    case "End": gameOver_Sound.play();
+    break;
+    case "Check": check_Sound.play();
+    break; 
+  }
+}
+
+//Notes: Move must not have been played already to play the right sound. This function does not play check sounds
 export function playMoveSound(move){
   const flag=Move.flag(move);
   const targetSquare=Move.targetSqr(move);
-  const capturedPiece=chess.board.piecesList[targetSquare];
+  const capturedPiece=engine.board.piecesList[targetSquare];
   const capturedPieceType=Piece.type(capturedPiece);
     
   if(flag==castleFlag){
@@ -526,6 +452,18 @@ export function playMoveSound(move){
   }
   
   move_Sound.play();
+}
+
+export function updateMoveList(move){
+  //Update moves list UI
+  const movesList = document.getElementById("movesList");
+  const moveListItems = movesList.getElementsByTagName('li');
+  const moveString = Move.toString(move);
+  if(engine.moveHistory.length%2==1){
+    const moveListItem = document.createElement("li");
+    movesList.appendChild(moveListItem);
+  }
+  moveListItems[moveListItems.length-1].textContent+=" " + moveString + " ";
 }
 
 /*Debug functions*/
