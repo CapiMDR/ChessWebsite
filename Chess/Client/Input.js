@@ -1,19 +1,18 @@
 //Handles all user input methods (clicking/dragging pieces)
-
-import { chess, squareSize, promotionMenu, lastBestMove, playMoveSound } from './sketch.js';
-import { sendToServer } from './client.js';
+import { squareSize, promotionMenu } from './Renderer.js';
+import { sendToServer } from './ClientNetwork.js';
+import { engine } from './ClientGame.js';
 import { GameResult } from '../Shared/Engine.js';
-import { BBUtil } from '../Shared/BBUtil.js';
 import { Move } from '../Shared/Move.js';
 import { BoardUtil } from '../Shared/BoardUtil.js';
-import{ white, black, pawn, knight, bishop, rook, queen } from '../Shared/Constants.js';
+import{  white, knight, bishop, rook, queen, promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag } from '../Shared/Constants.js';
 
 export let selectedSquare;
 export let selectToggle=true;
 export let dragging=false;
 
 window.touchStarted = function() {
-  if(chess.result==GameResult.starting) return;
+  if(engine.result==GameResult.starting) return;
   
   const currentFile=Math.floor(mouseX/squareSize);
   const currentRank=Math.floor(mouseY/squareSize);
@@ -85,7 +84,7 @@ function searchMoves(moveFrom, moveTo){
   const moveToFile=BoardUtil.squareToFile(moveTo);
   const moveToRank=BoardUtil.squareToRank(moveTo);
   //Looking for a move that matches with the user input
-  for(let move of chess.moves){
+  for(let move of engine.moves){
     const moveStartSqr=Move.startSqr(move);
     const moveTargetSqr=Move.targetSqr(move);
     if(moveStartSqr!=moveFrom || moveTargetSqr!=moveTo) continue;
@@ -94,7 +93,7 @@ function searchMoves(moveFrom, moveTo){
       //Open promotion menu at the target square
       promotionMenu.active = true;
       promotionMenu.x = moveToFile * squareSize;
-      promotionMenu.y = (chess.clrToMove==white) ? moveToRank*squareSize : (moveToRank-3) * squareSize;
+      promotionMenu.y = (engine.clrToMove==white) ? moveToRank*squareSize : (moveToRank-3) * squareSize;
       promotionMenu.move = move;
       return undefined; //Wait for user to choose promotion
     }
@@ -133,36 +132,4 @@ function handlePromotionClick(file, rank) {
 
   promotionMenu.active = false;
   return undefined;
-}
-
-window.keyPressed = function() {
-  //Skip inputs if selecting a text field
-  const active = document.activeElement;
-  if(active.tagName=="INPUT" || active.tagName=="TEXTAREA") return;
-  
-  //Let CapraStar (AI) evaluate the current position
-  if (key === 'w') {
-    console.log("Evaluating position with CapraStar...")
-    capraStar.postMessage({
-      type: 'evaluate',
-      fen: chess.board.toFEN(true),
-      repetitionHistory: chess.board.repetitionHistory
-    });
-  }
-  
-  //Clear the evaluation
-  if (key === 's') {
-    lastEval=0;
-    lastBestMove=null;
-  }
-  
-  //Undo last move
-  if (key === 'a') {
-    chess.undoMove();
-  }
-  
-  //Redo last undone move
-  if (key === 'd') {
-    chess.redoMove();
-  }
 }
