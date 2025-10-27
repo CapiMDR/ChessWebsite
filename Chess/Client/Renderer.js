@@ -6,11 +6,7 @@ import { BoardUtil } from '../Shared/BoardUtil.js';
 import{  white, black, none, pawn, knight, bishop, rook, queen, king, enPassantFlag, castleFlag } from '../Shared/Constants.js';
 import { selectedSquare, dragging} from './Input.js';
 import { GameResult } from '../Shared/Engine.js';
-<<<<<<< HEAD
 import { engine, setupGame, clientColor } from './ClientGame.js';
-=======
-import { engine, setupGame } from './ClientGame.js';
->>>>>>> 69a3e34a01266ce90eed725bda0407356a481d4b
 import { sendToServer, host, port } from './ClientNetwork.js';
 
 const windowHeight = window.innerHeight;
@@ -105,11 +101,7 @@ window.draw = function() {
   
   //debugView(engine);
   
-<<<<<<< HEAD
   if(clientColor==engine.clrToMove) drawLegalMoves(engine, color(45,221,162,180));
-=======
-  drawLegalMoves(engine, color(45,221,162,180));
->>>>>>> 69a3e34a01266ce90eed725bda0407356a481d4b
   drawBestMoveArrow();
   drawUIText(engine);
   drawUITimers(engine);
