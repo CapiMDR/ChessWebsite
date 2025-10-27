@@ -7,7 +7,7 @@ import{  white, black, none, pawn, knight, bishop, rook, queen, king, enPassantF
 import { selectedSquare, dragging} from './Input.js';
 import { GameResult } from '../Shared/Engine.js';
 import { engine, setupGame, clientColor } from './ClientGame.js';
-import { sendToServer, host, port } from './ClientNetwork.js';
+import { sendToServer } from './ClientNetwork.js';
 
 const windowHeight = window.innerHeight;
 const boardSize=windowHeight*0.9*0.8;
@@ -41,9 +41,8 @@ export let start_Sound;
 let castle_Sound;
 
 window.preload = function() {
-  const baseURL = `https://${host}:${port}/assets`;
-  const imageUrl = `${baseURL}/Images`
-  const soundUrl = `${baseURL}/Sounds`
+  const imageUrl = `../../Assets/Images`
+  const soundUrl = `../../Assets/Sounds`
 
   wP_Icon=loadImage(`${imageUrl}/WP.png`);
   wN_Icon=loadImage(`${imageUrl}/WN.png`);
