@@ -7,8 +7,10 @@ import { Server } from "socket.io";
 import fs from "fs";
 import os from "os";
 import cors from "cors";
-import { fileURLToPath  } from 'url';
-import { dirname  } from 'path';
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import { getGameStatus, gameIsOver, startGame, isLegalMove } from "./ServerGame.js";
+import { white, black } from "../Shared/Constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -68,6 +70,10 @@ app.use('/shared', express.static(path.join(__dirname, '../Shared')));
 app.use(express.static(path.join(__dirname, '../Chess')));
 
 let onlineUsers = 0; //Number of clients connected to this server
+let gameHasStarted = false; //When a user connects, if game has started sync its board to server board
+
+const players = {}; //socket.id -> { color, name?, reconnected? }
+let colorAssignments = { [white]: null, [black]: null }; //track which socket has which color
 
 //Socket actions
 io.on('connection', (socket) => {
@@ -86,20 +92,41 @@ io.on('connection', (socket) => {
   socket.on('message', (msg) => {
     switch(msg.type){
       case 'ready':
-        //New client connected and ready to begin
         onlineUsers++;
-        console.log('New user connected ' + onlineUsers);
+        console.log(`New user ready (${socket.id}). Online: ${onlineUsers}`);
+
+        //If the player is new, try assigning them a new color
+        const assignedColor = assignColor(socket);
+        players[socket.id] = { color: assignedColor };
+        socket.emit("message", { type: "color", color: assignedColor });
+
+        if(gameHasStarted){
+          //If the game has already started, tell the client to sync its board with the server's and start its game
+          const gameStatus = getGameStatus();
+          socket.emit('message', {type: 'startGame'});
+          socket.emit('message', {type: 'syncGame', gameStatus: gameStatus})
+          return;
+        }
+        
         //Once 2 users join the game, start it
-        if(onlineUsers==2){
-          console.log("Staring game")
-          io.emit('message', {type: 'startGame'});
-        } 
+        const bothReady = colorAssignments[white] && colorAssignments[black];
+        if (bothReady && !gameHasStarted) {
+          console.log("Starting game");
+          startGame();
+          gameHasStarted = true;
+          io.emit("message", { type: "startGame" });
+        }
       break;
 
       case 'move':
-        console.log('Receive move ' + msg.move);
-        //TODO: Validate client move before broadcasting
-        io.emit('message', {type: 'move', move: msg.move});
+        const clientMove = msg.move;
+        //If the server receives a move from a client, validate it and resend it to everyone
+        if(!isLegalMove(clientMove)) return;
+
+        const gameStatus = getGameStatus();
+        io.emit('message', {type: 'move', move: clientMove, gameStatus: gameStatus});
+        //If the game is over after the move, notify clients
+        if(gameIsOver()) io.emit('message', {type: 'endGame'});
       break;
 
       default: console.log("Invalid message type from a client");    
@@ -111,4 +138,23 @@ io.on('connection', (socket) => {
 server.listen(3000, '0.0.0.0', () => {
   console.log(`Server running at:`);
   console.log(`  https://${localIP}:3000`);
+  console.log(`URL:  https://${localIP}/ChessWebsite/Landing`);
 });
+
+function assignColor(socket){
+  //Assign random color if not already taken
+  let assignedColor = null;
+
+  const availableColors = [];
+  if (!colorAssignments[white]) availableColors.push(white);
+  if (!colorAssignments[black]) availableColors.push(black);
+
+  if (availableColors.length > 0) {
+    assignedColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+    colorAssignments[assignedColor] = socket.id;
+  } else {
+    //Both colors taken, make them a spectator
+    assignedColor = "spectator";
+  }
+  return assignedColor;
+}

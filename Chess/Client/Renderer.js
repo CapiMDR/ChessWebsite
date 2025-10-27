@@ -7,7 +7,6 @@ import{  white, black, none, pawn, knight, bishop, rook, queen, king, enPassantF
 import { selectedSquare, dragging} from './Input.js';
 import { GameResult } from '../Shared/Engine.js';
 import { engine, setupGame, clientColor } from './ClientGame.js';
-import { engine, setupGame } from './ClientGame.js';
 import { sendToServer, host, port } from './ClientNetwork.js';
 
 const windowHeight = window.innerHeight;
