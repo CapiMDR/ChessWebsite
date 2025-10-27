@@ -1,12 +1,7 @@
 //Handles all user input methods (clicking/dragging pieces)
 import { squareSize, promotionMenu } from './Renderer.js';
 import { sendToServer } from './ClientNetwork.js';
-<<<<<<< HEAD
 import { engine, clientColor } from './ClientGame.js';
-=======
-import { engine } from './ClientGame.js';
-import { GameResult } from '../Shared/Engine.js';
->>>>>>> 69a3e34a01266ce90eed725bda0407356a481d4b
 import { Move } from '../Shared/Move.js';
 import { BoardUtil } from '../Shared/BoardUtil.js';
 import{  white, knight, bishop, rook, queen, promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag } from '../Shared/Constants.js';
@@ -16,11 +11,6 @@ export let selectToggle=true;
 export let dragging=false;
 
 window.touchStarted = function() {
-<<<<<<< HEAD
-=======
-  if(engine.result==GameResult.starting) return;
-  
->>>>>>> 69a3e34a01266ce90eed725bda0407356a481d4b
   const currentFile=Math.floor(mouseX/squareSize);
   const currentRank=Math.floor(mouseY/squareSize);
   const currentSquare=BoardUtil.indexToSquare(currentFile,currentRank);
