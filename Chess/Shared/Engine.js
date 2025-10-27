@@ -21,6 +21,7 @@ export class Engine{
     this.redoHistory = []; //Stack for redoing moves after undoing them
     
     this.clrToMove=this.board.clrToMove;
+    this.inCheck=false; //If any king is in check in the current position
     this.result=GameResult.starting;
     this.gameIsOver=false;
     
@@ -54,7 +55,8 @@ export class Engine{
   
   runGame(){
     this.clrToMove=this.board.clrToMove;
-    this.moves = this.moveGenerator.generateMoves(this.board);
+    this.moves=this.moveGenerator.generateMoves(this.board);
+    this.inCheck=this.moveGenerator.inCheck;
     const plyCounter=this.board.plyCounter;
     
     this.whiteMaterial=this.board.getColorMaterial(white, standardPieceValues);
@@ -62,8 +64,7 @@ export class Engine{
     
     //Checking game result after every move
     if(this.moves.length==0){
-      const inCheck=this.moveGenerator.inCheck;
-      this.result=(inCheck) ? this.getCheckmateResult() : GameResult.stalemate;
+      this.result=(this.inCheck) ? this.getCheckmateResult() : GameResult.stalemate;
     }
     
     if(plyCounter>=100) this.result=GameResult.fiftyMoveRule;
@@ -81,16 +82,6 @@ export class Engine{
     this.moveHistory.push(move);
     if(!redoingMove) this.redoHistory = [];
     this.runGame();
-    
-    //Update moves list UI
-    const movesList = document.getElementById("movesList");
-    const moveListItems = movesList.getElementsByTagName('li');
-    const moveString = Move.toString(move);
-    if(this.moveHistory.length%2==1){
-      const moveListItem = document.createElement("li");
-      movesList.appendChild(moveListItem);
-    }
-    moveListItems[moveListItems.length-1].textContent+=" " + moveString + " ";
   }
   
   //Undoes the last played move, to undo any move without updating results use board.unmakeMove instead
@@ -102,21 +93,6 @@ export class Engine{
     this.board.unmakeMove(moveToUndo);
     this.updateCapturedArrays(moveToUndo,true);
     this.runGame();
-    
-    //Update moves list UI
-    const movesList = document.getElementById("movesList");
-    const moveListItems = movesList.getElementsByTagName('li');
-    if(this.moveHistory.length%2==0){
-      moveListItems[moveListItems.length-1].remove();
-    }else{
-      const moveListItemText=moveListItems[moveListItems.length-1].textContent;
-      if(moveListItemText.length>5){
-        moveListItems[moveListItems.length-1].textContent=moveListItemText.substring(0,6)
-      }else{
-        moveListItems[moveListItems.length-1].textContent=moveListItemText.substring(0,5)
-      }
-    }
-
   }
   
   //Updates captured pieces arrays after every played move
