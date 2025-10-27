@@ -1,10 +1,7 @@
 //Runs a game locally using the moves/results received from the server
 import { Timer } from '../Shared/Timer.js';
 import { Engine } from '../Shared/Engine.js';
-<<<<<<< HEAD
 import { playMoveSound, playSound, updateMoveList } from './Renderer.js';
-=======
->>>>>>> 69a3e34a01266ce90eed725bda0407356a481d4b
 
 const startFEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -17,10 +14,7 @@ const blackMinutes=5;
 const blackIncrementSeconds=3;
 
 export let engine;
-<<<<<<< HEAD
 export let clientColor;
-=======
->>>>>>> 69a3e34a01266ce90eed725bda0407356a481d4b
 
 export function setupGame() {
     //Minutes & increment in seconds
@@ -30,7 +24,6 @@ export function setupGame() {
     engine.setTimers(whiteTimer, blackTimer);
 }
 
-<<<<<<< HEAD
 export function handleServerSync(gameStatus, shouldPlayAllMoves){
     if(shouldPlayAllMoves){
         //Playing all moves played so far on local board if a client disconnects and reconnects
@@ -54,9 +47,6 @@ export function handleGameStart(){
 export function syncGame(gameStatus){
   engine.clrToMove = gameStatus.clrToMove;
   engine.result = gameStatus.gameResult;
-=======
-export function syncTimers(gameStatus){
->>>>>>> 69a3e34a01266ce90eed725bda0407356a481d4b
   whiteTimer.remainingTime = gameStatus.whiteTime;
   blackTimer.remainingTime = gameStatus.blackTime;
 }
@@ -64,7 +54,6 @@ export function syncTimers(gameStatus){
 //Plays a move received from the server on the client side
 export function playBackMove(move){
   engine.playMove(move, false);
-<<<<<<< HEAD
 }
 
 export function handleGameEnd(){
@@ -76,6 +65,4 @@ export function handleMove(move, shouldPlaySounds=true){
     playBackMove(move);
     if(engine.inCheck && shouldPlaySounds) playSound("Check");
     updateMoveList(move);
-=======
->>>>>>> 69a3e34a01266ce90eed725bda0407356a481d4b
 }
