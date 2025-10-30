@@ -9,8 +9,7 @@ import os from "os";
 import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { getGameStatus, gameIsOver, startGame, isLegalMove } from "./ServerGame.js";
-import { white, black } from "../Shared/Constants.js";
+import { handlePlayerReady, handleDisconnect, handleReceivedMove } from "./ServerController.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -70,12 +69,6 @@ app.use('/shared', express.static(path.join(__dirname, '../Shared')));
 app.use(express.static(path.join(__dirname, '../Chess')));
 
 let onlineUsers = 0;
-let gameHasStarted = false;
-
-// Map playerId -> { color, socketId }
-const players = {};
-let colorAssignments = { [white]: null, [black]: null };
-let originalPlayers = { [white]: null, [black]: null };
 
 //Socket actions
 io.on('connection', (socket) => {
@@ -85,67 +78,33 @@ io.on('connection', (socket) => {
     socket.disconnect();
     return;
   }
-  console.log(`Player connected: ${playerId} (socket: ${socket.id}). Online: ${onlineUsers}`);
+  onlineUsers++;
+  console.log(`Player ${playerId} connected (socket: ${socket.id}). Online: ${onlineUsers}`);
 
   socket.on('disconnect', () => {
     onlineUsers--;
-    console.log(`Player ${playerId} disconnected (socket: ${socket.id})`);
-
-    //Clearing color assignment if game hasn't started yet when a player disconnects
-    if (gameHasStarted) return;
-    if (colorAssignments[white] === playerId) colorAssignments[white] = null;
-    if (colorAssignments[black] === playerId) colorAssignments[black] = null;
+    console.log(`Player ${playerId} disconnected (socket: ${socket.id}). Online: ${onlineUsers}`);
+    handleDisconnect(playerId);
   });
 
   socket.on('message', (msg) => {
     switch (msg.type) {
-      case 'ready':
-        onlineUsers++;
-        console.log(`New user ready (${socket.id}). Online: ${onlineUsers}`);
-
-        //Assign color to the player. If both colors taken, assign spectator. If reconnecting, assign original color.
-        const assignedColor = assignColor(playerId);
-        players[playerId] = { color: assignedColor, socketId: socket.id };
-
-        socket.emit("message", { type: "color", color: assignedColor });
-
-        if (gameHasStarted) {
-            const gameStatus = getGameStatus();
-            socket.emit('message', { type: 'startGame' });
-            socket.emit('message', { type: 'syncGame', gameStatus });
-          return;
-        }
-
-        //Start game when both players ready (both colors assigned)
-        const bothReady = colorAssignments[white] && colorAssignments[black];
-        if (!bothReady) return;
-        startGame();
-        gameHasStarted = true;
-
-        //Keep track of the two players who started the game
-        originalPlayers[white] = colorAssignments[white];
-        originalPlayers[black] = colorAssignments[black];
-
-        io.emit("message", { type: "startGame" });
-        break;
-
-      case 'move':
-        const move = msg.move;
-        //If the server receives a move from a client, validate it and resend it to everyone
-        if (!isLegalMove(move)) return;
-
-        const gameStatus = getGameStatus();
-        io.emit('message', { type: 'move', move, gameStatus });
-
-        //If the game is over after the move, notify clients
-        if (gameIsOver()) io.emit('message', { type: 'endGame' });
-        break;
-
-      default:
-        console.log("Invalid message type");
+      case 'ready': handlePlayerReady(socket, playerId);
+      break;
+      case 'move': handleReceivedMove(msg.move);
+      break;
+      default: console.log("Invalid message type from client");
     }
   });
 });
+
+export function sendToAllClients(msgContent){
+  io.emit('message', msgContent);
+}
+
+export function respondToClient(socket, msgContent){
+  socket.emit('message', msgContent);
+}
 
 //Server start
 server.listen(3000, '0.0.0.0', () => {
@@ -153,30 +112,3 @@ server.listen(3000, '0.0.0.0', () => {
   console.log(`  https://${localIP}:3000`);
   console.log(`URL:  https://${localIP}/ChessWebsite/Landing`);
 });
-
-function assignColor(playerId) {
-  if (gameHasStarted) {
-    //Only original players can rejoin
-    for (const color of [white, black]) {
-      if (originalPlayers[color] === playerId) {
-        colorAssignments[color] = playerId;
-        console.log(`Original ${color} player reconnected`);
-        return color;
-      }
-    }
-    return "spectator";
-  }
-
-  //Before game starts assign available color
-  const availableColors = [];
-  if (!colorAssignments[white]) availableColors.push(white);
-  if (!colorAssignments[black]) availableColors.push(black);
-
-  if (availableColors.length > 0) {
-    const assigned = availableColors[Math.floor(Math.random() * availableColors.length)];
-    colorAssignments[assigned] = playerId;
-    return assigned;
-  }
-
-  return "spectator";
-}

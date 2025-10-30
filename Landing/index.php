@@ -15,6 +15,13 @@
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/addons/p5.sound.min.js"></script>
     <link rel="stylesheet" type="text/css" href="../Assets/CSS/style.css">
     <meta charset="utf-8" />
+    <script>
+      //Small script to set game mode and submit form automatically
+      function setMode(mode) {
+        document.getElementById('gameMode').value = mode;
+        document.getElementById('gameForm').submit();
+      }
+    </script>
   </head>
   <body>
     <div id="container">
@@ -22,15 +29,12 @@
       <div id="menuContainer">
         <div id="leftColumn" class="styledBox">
           <div id="menuBTNS">
-            <form action="/ChessWebsite/Chess/Client/gameIndex.php" method="GET">
-              <button class="styledButton btn-large" type="submit">Play online</button>
-            </form>
-            <form action="/ChessWebsite/Chess/Client/gameIndex.php" method="GET">
-              <button class="styledButton btn-large" type="submit">Play vs bot</button>
-            </form>
-            <form action="/ChessWebsite/Chess/Client/gameIndex.php" method="GET">
-              <button class="styledButton btn-large" type="submit">Play local</button>
-            </form>
+            <form id="gameForm" action="/ChessWebsite/Chess/Client/gameIndex.php" method="GET">
+            <input type="hidden" name="mode" id="gameMode" value="">
+            <button class="styledButton btn-large" type="button" onclick="setMode('online')">Play online</button>
+            <button class="styledButton btn-large" type="button" onclick="setMode('bot')">Play vs bot</button>
+            <button class="styledButton btn-large" type="button" onclick="setMode('local')">Play local</button>
+          </form>
           </div>
         </div>
         <div id="middleContainer">
