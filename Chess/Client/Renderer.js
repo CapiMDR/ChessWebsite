@@ -6,8 +6,7 @@ import { BoardUtil } from '../Shared/BoardUtil.js';
 import{  white, black, none, pawn, knight, bishop, rook, queen, king, enPassantFlag, castleFlag } from '../Shared/Constants.js';
 import { selectedSquare, dragging} from './Input.js';
 import { GameResult } from '../Shared/Engine.js';
-import { engine, setupGame, clientColor } from './ClientGame.js';
-import { sendToServer } from './ClientNetwork.js';
+import { engine, clientColor, onPageLoaded, gameMode } from './ClientController.js';
 
 const windowHeight = window.innerHeight;
 const boardSize=windowHeight*0.9*0.8;
@@ -72,9 +71,7 @@ window.preload = function() {
 window.setup = function() {
   const cnv = createCanvas(boardSize+UISize, boardSize);
   cnv.parent("canvasContainer");
-  setupGame();
-  //Telling the server that this client is ready to begin
-  sendToServer({type: 'ready'});
+  onPageLoaded();
 }
 
 function redoMove() {
@@ -99,8 +96,8 @@ window.draw = function() {
   drawPieces(engine);
   
   //debugView(engine);
+  drawLegalMoves(engine, color(45,221,162,180));
 
-  if(clientColor==engine.clrToMove) drawLegalMoves(engine, color(45,221,162,180));
   drawBestMoveArrow();
   drawUIText(engine);
   drawUITimers(engine);
@@ -205,6 +202,9 @@ function drawCapturedPieces(engine){
 }
 
 function drawLegalMoves(engine,clr=color(0)){
+  //Only draw legal moves if it's this client's turn (for online) or it's local/bot mode
+  if(gameMode=='online' && clientColor!=engine.clrToMove) return;
+
   fill(clr);
   noStroke();
   for(let move of engine.moves){

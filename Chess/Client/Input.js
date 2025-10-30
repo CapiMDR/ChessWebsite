@@ -1,9 +1,9 @@
 //Handles all user input methods (clicking/dragging pieces)
 import { squareSize, promotionMenu } from './Renderer.js';
-import { sendToServer } from './ClientNetwork.js';
-import { engine, clientColor } from './ClientGame.js';
+import { engine, registerMove } from './ClientController.js';
 import { Move } from '../Shared/Move.js';
 import { BoardUtil } from '../Shared/BoardUtil.js';
+import { GameResult } from '../Shared/Engine.js';
 import{  white, knight, bishop, rook, queen, promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag } from '../Shared/Constants.js';
 
 export let selectedSquare;
@@ -11,19 +11,14 @@ export let selectToggle=true;
 export let dragging=false;
 
 window.touchStarted = function() {
+  if(engine.result==GameResult.starting) return;
   const currentFile=Math.floor(mouseX/squareSize);
   const currentRank=Math.floor(mouseY/squareSize);
   const currentSquare=BoardUtil.indexToSquare(currentFile,currentRank);
   
   if(promotionMenu.active){
     const playedMove=handlePromotionClick(currentFile, currentRank);
-    if(playedMove!=undefined){
-      if(clientColor==engine.clrToMove)
-      sendToServer({
-        type: 'move',
-        move: playedMove
-      });
-    }
+    if(playedMove!=undefined) registerMove(playedMove);
     return;
   }
   
@@ -35,11 +30,7 @@ window.touchStarted = function() {
   if(selectedSquare!=undefined){ 
     const playedMove=searchMoves(selectedSquare, currentSquare);
     if(playedMove!=undefined){
-      if(clientColor==engine.clrToMove)
-      sendToServer({
-        type: 'move',
-        move: playedMove
-      });
+      registerMove(playedMove);
       selectedSquare=undefined;
       return;
     }
@@ -51,10 +42,12 @@ window.touchStarted = function() {
 }
 
 window.touchMoved = function() {
+  if(engine.result==GameResult.starting) return;
   dragging=true;
 }
 
 window.touchEnded = function() {
+  if(engine.result==GameResult.starting) return;
   dragging=false
   if(selectedSquare==undefined) return;
   const releasedFile=Math.floor(mouseX/squareSize);
@@ -67,13 +60,7 @@ window.touchEnded = function() {
   if(promotionMenu.active) return;
   
   const playedMove=searchMoves(selectedSquare, releasedSquare);
-  if(playedMove!=undefined){
-    if(clientColor==engine.clrToMove)
-    sendToServer({
-      type: 'move',
-      move: playedMove
-    });
-  }
+  if(playedMove!=undefined) registerMove(playedMove);
   
   if(releasedSquare!=selectedSquare || selectToggle || (releasedSquare==selectedSquare && dragging)){
     selectedSquare=undefined;

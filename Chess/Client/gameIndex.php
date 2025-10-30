@@ -8,6 +8,8 @@
     if (!isset($_SESSION['user'])){
         header('Location: ../../Landing/login.php');
     }
+
+    $mode = $_GET['mode'] ?? 'online'; //Game mode chosen from landing page
   ?>
   <head>
     <title>Playing Chess</title>
@@ -17,6 +19,10 @@
     <link rel="stylesheet" type="text/css" href="../../Assets/CSS/style.css">
     <link rel="stylesheet" type="text/css" href="../../Assets/CSS/game.css">
     <meta charset="utf-8" />
+    <script>
+      //Small script to pass game mode to ClientController.js
+      window.gameMode = "<?php echo htmlspecialchars($mode, ENT_QUOTES); ?>";
+    </script>
   </head>
   <body>
     <div id="container">
