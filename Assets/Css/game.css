@@ -19,6 +19,7 @@ canvas {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 10;
+  border-radius: 1%;
 }
 
 #gameRow {
@@ -50,11 +51,27 @@ canvas {
   background-color: rgba(245, 245, 245, 0.1);
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
   gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
 }
 
 #movesList {
   max-height: 45vh;
   overflow-y: auto;
+  list-style: none;
+  padding-left: 0;
+  counter-reset: move;
+}
+
+#movesList li {
+  padding: 0.3rem 0;
+  counter-increment: move;
+}
+
+#movesList li::before {
+  content: counter(move) ". ";
+  color: #aaa;
+  margin-right: 0.3rem;
 }
 
 #moveBTNS {
@@ -66,6 +83,11 @@ canvas {
 .styledTextField {
   width: 250px;
   border-radius: 1%;
+}
+
+#loaderContainer {
+  display: flex;
+  flex-direction: column;
 }
 
 .loader {

@@ -9,6 +9,7 @@ body {
 
 * {
   box-sizing: border-box;
+  user-select: none;
 }
 
 #container {
@@ -73,7 +74,7 @@ body {
   border-radius: 15px;
 }
 
-.styledButton {
+.btn-styled {
   border: none;
   cursor: pointer;
   background: rgba(245, 245, 245, 0.1);
@@ -90,6 +91,10 @@ body {
   gap: 10px;
 }
 
+.btn-styled:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .btn-large {
   font-size: 1.1rem;
 }
@@ -102,7 +107,6 @@ body {
 .btn-styled-red {
   background: rgba(237, 34, 93, 0.9);
   color: white;
-  border-radius: 50%;
   border: none;
   cursor: pointer;
   box-shadow: 0 8px 32px rgba(237, 34, 93, 0.3);
@@ -118,11 +122,6 @@ body {
   transform: scale(1.1);
   background: rgba(250, 69, 121, 0.9);
   box-shadow: 0 8px 32px rgba(250, 69, 121, 0.4);
-}
-
-.styledButton:hover {
-  transform: translateX(10px);
-  background: rgba(255, 255, 255, 0.2);
 }
 
 .styledTextField {
@@ -147,6 +146,7 @@ body {
 }
 
 #playBTN {
+  border-radius: 50%;
   animation: float 3s ease-in-out infinite;
 }
 
@@ -250,4 +250,22 @@ body {
   justify-content: center;
   gap: 0.5rem;
   font-size: 1.1rem;
+}
+
+.scalable {
+  transition: transform 0.25s ease;
+  cursor: pointer;
+}
+
+.scalable:hover {
+  transform: scale(1.08);
+}
+
+.movable {
+  transition: transform 0.25s ease;
+  cursor: pointer;
+}
+
+.movable:hover {
+  transform: translateX(10px);
 }

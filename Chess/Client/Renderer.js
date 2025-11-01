@@ -39,22 +39,22 @@ export let start_Sound;
 let castle_Sound;
 
 window.preload = function () {
-  const imageUrl = `../../Assets/Images`;
+  const piecesUrl = `../../Assets/Images/merida`;
   const soundUrl = `../../Assets/Sounds`;
 
-  wP_Icon = loadImage(`${imageUrl}/WP.png`);
-  wN_Icon = loadImage(`${imageUrl}/WN.png`);
-  wB_Icon = loadImage(`${imageUrl}/WB.png`);
-  wR_Icon = loadImage(`${imageUrl}/WR.png`);
-  wQ_Icon = loadImage(`${imageUrl}/WQ.png`);
-  wK_Icon = loadImage(`${imageUrl}/WK.png`);
+  wP_Icon = loadImage(`${piecesUrl}/wP.svg`);
+  wN_Icon = loadImage(`${piecesUrl}/wN.svg`);
+  wB_Icon = loadImage(`${piecesUrl}/wB.svg`);
+  wR_Icon = loadImage(`${piecesUrl}/wR.svg`);
+  wQ_Icon = loadImage(`${piecesUrl}/wQ.svg`);
+  wK_Icon = loadImage(`${piecesUrl}/wK.svg`);
 
-  bP_Icon = loadImage(`${imageUrl}/BP.png`);
-  bN_Icon = loadImage(`${imageUrl}/BN.png`);
-  bB_Icon = loadImage(`${imageUrl}/BB.png`);
-  bR_Icon = loadImage(`${imageUrl}/BR.png`);
-  bQ_Icon = loadImage(`${imageUrl}/BQ.png`);
-  bK_Icon = loadImage(`${imageUrl}/BK.png`);
+  bP_Icon = loadImage(`${piecesUrl}/bP.svg`);
+  bN_Icon = loadImage(`${piecesUrl}/bN.svg`);
+  bB_Icon = loadImage(`${piecesUrl}/bB.svg`);
+  bR_Icon = loadImage(`${piecesUrl}/bR.svg`);
+  bQ_Icon = loadImage(`${piecesUrl}/bQ.svg`);
+  bK_Icon = loadImage(`${piecesUrl}/bK.svg`);
 
   capture_Sound = loadSound(`${soundUrl}/captures.mp3`);
   move_Sound = loadSound(`${soundUrl}/move.mp3`);
@@ -63,7 +63,7 @@ window.preload = function () {
   castle_Sound = loadSound(`${soundUrl}/castle.mp3`);
   start_Sound = loadSound(`${soundUrl}/start.mp3`);
 
-  check_Glow = loadImage(`${imageUrl}/Glow.png`);
+  check_Glow = loadImage(`../../Assets/Images/Glow.png`);
 };
 
 window.setup = function () {
@@ -88,7 +88,7 @@ export function setupBoard(FEN) {
 window.draw = function () {
   //background(251,251,251);
   //background(245);
-  background(72);
+  background(56);
   drawBoard();
   highlightSquares(engine, color(45, 221, 162, 180), color(211, 42, 50, 180));
   drawCheckBubble(engine);
