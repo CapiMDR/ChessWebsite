@@ -2,141 +2,182 @@
 /* This bot will for sure checkmaaaaate you */
 
 //Web worker script for the AI to run in parallel to the UI
-importScripts(`BoardUtil.js?v=${Date.now()}`,
-              `Perft.js?v=${Date.now()}`,
-              `Constants.js?v=${Date.now()}`,
-              `BBUtil.js?v=${Date.now()}`,
-              `Piece.js?v=${Date.now()}`,
-              `Zobrist.js?v=${Date.now()}`,
-              `GameState.js?v=${Date.now()}`,
-              `Board.js?v=${Date.now()}`,
-              `Move.js?v=${Date.now()}`,
-              `MoveGenerator.js?v=${Date.now()}`);
+
+import { Move } from "../Shared/Move.js";
+import { white, black, none, pawn, knight, bishop, rook, queen, king } from "../Shared/Constants.js";
+import { MoveGenerator } from "../Shared/MoveGenerator.js";
+import { Board } from "../Shared/Board.js";
+import { BoardUtil } from "../Shared/BoardUtil.js";
+import { BBUtil } from "../Shared/BBUtil.js";
+import { Piece } from "../Shared/Piece.js";
 
 let capraStar = null;
-let book = {}; //Map of book moves passed from sketch.js
+const bookPath = "./Book.txt";
+let book = {};
 
-onmessage = function(e) {
-  const {type, fen} = e.data;
-  switch(type){
-    case 'init':
-      book = e.data.book;
-      capraStar = new CapraStar(new Board());
-    break;
-    case 'search':
-      if (!capraStar) capraStar = new CapraStar(new Board());
-      //Empty CapraStar's copy of the board
-      capraStar.board.init();
-      //Reconstruct current board from FEN
-      capraStar.board.fillBoard(fen);
-      capraStar.positionHistory=e.data.repetitionHistory;
-      
-      //Get best move
-      const legalMoves = capraStar.moveGen.generateMoves(capraStar.board);
-      const bestMove = capraStar.getBestMove(legalMoves);
-    
+onmessage = function (e) {
+  const { type, fen } = e.data;
+  let bestMove;
+  switch (type) {
+    case "init":
+      initBot();
+      break;
+    case "search":
+      if (!capraStar) initBot();
+
+      bestMove = search(fen, e.data.repetitionHistory);
       postMessage({
-        type: 'result',
+        type: "result",
         bestMove: bestMove,
-        evaluation: capraStar.evaluation
-      });   
-    break;
-    case 'evaluate':
-      if (!capraStar) capraStar = new CapraStar(new Board());
-      //Empty CapraStar's copy of the board
-      capraStar.board.init();
-      //Reconstruct current board from FEN
-      capraStar.board.fillBoard(fen);
-      capraStar.positionHistory=e.data.repetitionHistory;
-    
-      //Get best move
-      const moves = capraStar.moveGen.generateMoves(capraStar.board);
+        evaluation: capraStar.evaluation,
+      });
+      break;
+    case "evaluate":
+      if (!capraStar) initBot();
+
       const start = performance.now();
-      const best = capraStar.getBestMove(moves);
+      bestMove = search(fen, e.data.repetitionHistory);
       const end = performance.now();
-      const timeTaken=end - start;
-      
+      const timeTaken = end - start;
+
       postMessage({
-        type: 'evaluation',
-        bestMove: best,
+        type: "evaluation",
+        bestMove: bestMove,
         evaluation: capraStar.evaluation,
         pv: capraStar.principalVariation,
-        timeTaken: timeTaken
-      });   
-    break;
+        timeTaken: timeTaken,
+      });
+      break;
   }
 };
 
-function getBookMove(board) {
-  const fen = board.toFEN(false, false) + " -";
-  const moves = book[fen];
-    
-  if(moves){
-    // Pick a random move from the book
-    const pickedMove=moves[Math.floor(Math.random() * moves.length)];
-    return Move.UCIToMove(pickedMove, board);
+//Initialize bot with its opening book (async for fetching the txt file)
+async function initBot() {
+  capraStar = new CapraStar(new Board());
+  book = await loadBookMoveEntries(bookPath);
+  capraStar.openingBook = book;
+}
+
+function search(fen, repetitionHistory) {
+  //Empty CapraStar's copy of the board
+  capraStar.board.init();
+  //Reconstruct current board from FEN
+  capraStar.board.fillBoard(fen);
+  capraStar.positionHistory = repetitionHistory;
+
+  const moves = capraStar.moveGen.generateMoves(capraStar.board);
+  //Get best move
+  const bestMove = capraStar.getBestMove(moves);
+  return bestMove;
+}
+
+//Initializes an opening repertoire for the bots to play
+async function loadBookMoveEntries(filePath) {
+  // Read the entire book file
+  const response = await fetch(filePath);
+  if (!response.ok) {
+    console.error(`Failed to load book file: ${response.status} ${response.statusText}`);
+    return {};
   }
-  return null;
+
+  const plainText = await response.text();
+
+  // Split into lines and clean up
+  const lines = plainText
+    .trim()
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  const book = {};
+  let currentFEN = null;
+
+  for (const l of lines) {
+    if (l.startsWith("pos ")) {
+      currentFEN = l.substring(4).trim();
+      if (!book[currentFEN]) {
+        book[currentFEN] = [];
+      }
+    } else if (currentFEN) {
+      // It's a move line, add it to the current FEN's move list
+      book[currentFEN].push(l);
+    }
+  }
+  return book;
 }
 
 //CapraStar bot implementation
-class CapraStar{
-  constructor(board){
-    this.board=board;
-    this.moveGen=new MoveGenerator();
+class CapraStar {
+  constructor(board) {
+    this.board = board;
+    this.moveGen = new MoveGenerator();
     this.initialize(); //Contains constants the bot uses like piece-square tables, etc
-    
+
     //Holds the best move found on every turn
-    this.bestMoveFound=0;
+    this.bestMoveFound = 0;
     //Holds the evaluation of the current position after a search
-    this.evaluation=0;
+    this.evaluation = 0;
     //Holds the current principal variation after a search (list of best moves for either side up to a certain depth)
     this.principalVariation = [];
     //Stack to keep track of position seen in this line to detect draws by repetition
     this.positionHistory = [];
+    //Map from FEN -> list of book moves
+    let openingBook = {};
   }
-  
+
+  //Receives a board position and returns a random book move
+  getBookMove(board) {
+    const fen = board.toFEN(false, false) + " -";
+    const moves = this.openingBook[fen];
+
+    if (moves) {
+      // Pick a random move from the book
+      const pickedMove = moves[Math.floor(Math.random() * moves.length)];
+      return Move.UCIToMove(pickedMove, board);
+    }
+    return null;
+  }
+
   //Receives list of legal moves and returns the best one
-  getBestMove(legalMoves){
+  getBestMove(legalMoves) {
     //Attempting to get a book move without searching
-    const bookMove = getBookMove(this.board);
-    
-    this.bestMoveFound=legalMoves[0]; //If for some reason no move is found play the first
-    
-    const piecesCount=this.board.pieceCounts[white][0]+this.board.pieceCounts[black][0];
-    
+    const bookMove = this.getBookMove(this.board);
+
+    this.bestMoveFound = legalMoves[0]; //If for some reason no move is found play the first
+
+    const piecesCount = this.board.pieceCounts[white][0] + this.board.pieceCounts[black][0];
+
     let maxDepth;
-    if(piecesCount>5) maxDepth=5;
-    else if(piecesCount>3) maxDepth=6;
-    else maxDepth=8;
-    
+    if (piecesCount > 5) maxDepth = 5;
+    else if (piecesCount > 3) maxDepth = 6;
+    else maxDepth = 8;
+
     //Iterative deepening. Performing a search from a depth of 1 all the way up to a depth of maxDepth
     //This is done to keep track of the best moves at every depth and look at those first on the next depth to prune more branches
     for (let depth = 1; depth <= maxDepth; depth++) {
       this.currentSearchDepth = depth;
       const { score, pv } = this.negaMax(-Infinity, Infinity, depth, 0, 0);
       this.evaluation = score;
-      if (pv && pv.length!=0) {
+      if (pv && pv.length != 0) {
         this.bestMoveFound = pv[0];
         this.principalVariation = pv;
       }
     }
-    
+
     //Returning book move after search to make it more "human" in the opening
-    if(bookMove) return bookMove;
+    if (bookMove) return bookMove;
     return this.bestMoveFound;
   }
-  
-  isRepetition(){
-    const currKey=this.board.zobristKey;
-    let count=0;
-    for(let zobrist of this.positionHistory){
-      if(zobrist==currKey) count++;
+
+  isRepetition() {
+    const currKey = this.board.zobristKey;
+    let count = 0;
+    for (let zobrist of this.positionHistory) {
+      if (zobrist == currKey) count++;
     }
     //Detecting repetition if the position has appeared twice (current position and some previous time)
-    return count>=2;
+    return count >= 2;
   }
-  
+
   //Main search function. Returns the evaluation of the position being searched
   //as well as the principal variation (best moves for either side on a given position)
   negaMax(alph, beta, depth, ply, currExtensions) {
@@ -148,10 +189,10 @@ class CapraStar{
 
       //If forced mate has been found already stop searching
       alph = Math.max(alph, -this.mateScore + ply);
-      beta = Math.min(beta,  this.mateScore - ply);
+      beta = Math.min(beta, this.mateScore - ply);
       if (alph >= beta) return { score: alph, pv: [] };
     }
-    
+
     const zobristHash = this.board.zobristKey;
     const entry = this.transpositionTable.get(zobristHash);
     //If we have seen this position from a different move order before fetch the refutation score and its principal variation
@@ -159,9 +200,9 @@ class CapraStar{
       const ttScore = this.adjustMateScoreForRetrieval(entry.bestScore, ply);
       if (ply == 0 && entry.bestMoveLocal) this.bestMoveFound = entry.bestMoveLocal;
 
-      if (entry.flag === 'EXACT') return { score: ttScore, pv: entry.pv || [] };
-      if (entry.flag === 'ALPHA' && ttScore <= alph) return { score: alph, pv: entry.pv || [] };
-      if (entry.flag === 'BETA'  && ttScore >= beta) return { score: beta, pv: entry.pv || [] };
+      if (entry.flag === "EXACT") return { score: ttScore, pv: entry.pv || [] };
+      if (entry.flag === "ALPHA" && ttScore <= alph) return { score: alph, pv: entry.pv || [] };
+      if (entry.flag === "BETA" && ttScore >= beta) return { score: beta, pv: entry.pv || [] };
     }
 
     //Base case when depth = 0, return the evaluation gotten from quiescence search and an empty principal variation
@@ -179,18 +220,18 @@ class CapraStar{
     }
 
     const firstAlpha = alph;
-    const firstBeta  = beta;
+    const firstBeta = beta;
 
     moves = this.sortMoves(moves, this.board, this.moveGen.enemyPawnAttacksMask, depth, ply);
 
     let bestScore = -Infinity;
     let bestMoveLocal = moves[0];
     let bestPV = [];
-  
+
     for (let move of moves) {
       this.board.makeMove(move, false);
       this.positionHistory.push(this.board.zobristKey);
-      
+
       //Extending searches for checks and pawns about to promote
       let extensions = 0;
       if (currExtensions < this.maxExtensions) {
@@ -200,7 +241,7 @@ class CapraStar{
         if (Piece.type(movedPiece) == pawn && (targetRank == 1 || targetRank == 6)) extensions = 1;
       }
 
-      const child = this.negaMax(-beta, -alph, depth - 1 + extensions, ply + 1, currExtensions +  extensions);
+      const child = this.negaMax(-beta, -alph, depth - 1 + extensions, ply + 1, currExtensions + extensions);
       const score = -child.score;
 
       this.board.unmakeMove(move, false);
@@ -233,19 +274,19 @@ class CapraStar{
         this.transpositionTable.set(zobristHash, {
           depth,
           bestScore: storedScore,
-          flag: 'BETA',
+          flag: "BETA",
           bestMoveLocal,
-          pv: bestPV
+          pv: bestPV,
         });
         return { score: bestScore, pv: bestPV };
       }
     }
-    
+
     //Storing refutation score on transposition table along its principal variation
     let flag;
-    if (bestScore <= firstAlpha) flag = 'ALPHA';
-    else if (bestScore >= firstBeta) flag = 'BETA';
-    else flag = 'EXACT';
+    if (bestScore <= firstAlpha) flag = "ALPHA";
+    else if (bestScore >= firstBeta) flag = "BETA";
+    else flag = "EXACT";
 
     const storedScore = this.adjustMateScoreForStorage(bestScore, ply);
     this.transpositionTable.set(zobristHash, {
@@ -253,97 +294,97 @@ class CapraStar{
       bestScore: storedScore,
       flag,
       bestMoveLocal,
-      pv: bestPV
+      pv: bestPV,
     });
 
     return { score: bestScore, pv: bestPV };
   }
 
-  
   isMateScore(score) {
     return Math.abs(score) > this.mateScore - 1000; //Near mate
   }
 
   adjustMateScoreForStorage(score, ply) {
     if (this.isMateScore(score)) {
-      if (score > 0) return score + ply;  //Sooner mate for us is bigger
-      else return score - ply;            //Sooner mate for opponent is smaller
+      if (score > 0) return score + ply; //Sooner mate for us is bigger
+      else return score - ply; //Sooner mate for opponent is smaller
     }
     return score;
   }
 
   adjustMateScoreForRetrieval(score, ply) {
     if (this.isMateScore(score)) {
-      if (score > 0) return score - ply;  //Undo storage adjustment
+      if (score > 0) return score - ply; //Undo storage adjustment
       else return score + ply;
     }
     return score;
   }
-  
+
   //Does a search of all captures to abritrary depth until there are none left
-  quiescence(alph, beta){
+  quiescence(alph, beta) {
     //Stand-pat evaluation
     const evaluation = this.evaluate(this.board);
-    let bestValue=evaluation;
-    if(bestValue>=beta) return bestValue;
-    if(bestValue>alph) alph = bestValue;
-    
+    let bestValue = evaluation;
+    if (bestValue >= beta) return bestValue;
+    if (bestValue > alph) alph = bestValue;
+
     const deltaMargin = 50;
-    let captureMoves=this.moveGen.generateMoves(this.board,true);
-    captureMoves=this.sortQuiescenceMoves(captureMoves, this.board);
-    
-    for(let capture of captureMoves){
+    let captureMoves = this.moveGen.generateMoves(this.board, true);
+    captureMoves = this.sortQuiescenceMoves(captureMoves, this.board);
+
+    for (let capture of captureMoves) {
       const capturedType = Move.capturePieceType(capture, this.board);
       const capturedValue = this.pieceValues[capturedType];
-      
+
       //Delta pruning
-      if(!Move.isPromotion(capture)){ //Not allowing pruning of promotion captures
-        if(bestValue + capturedValue + deltaMargin < alph) continue; 
+      if (!Move.isPromotion(capture)) {
+        //Not allowing pruning of promotion captures
+        if (bestValue + capturedValue + deltaMargin < alph) continue;
       }
-      
+
       this.board.makeMove(capture, false);
       const score = -this.quiescence(-beta, -alph);
       this.board.unmakeMove(capture, false);
-      
-      if(score>=beta) return score;
-      if(score>bestValue) bestValue=score;
-      if(score>alph) alph=score;
+
+      if (score >= beta) return score;
+      if (score > bestValue) bestValue = score;
+      if (score > alph) alph = score;
     }
     return bestValue;
   }
-  
+
   //Generates the "value" of a capture move
   //Capturing a queen with a pawn is usually preferable over capturing a pawn with a queen
-  getMVVLVA(move, board){
-    const attackerPiece=board.piecesList[Move.startSqr(move)];
-    const victimType=Move.capturePieceType(move,board);
-    const attackerType=Piece.type(attackerPiece);
-    
-    if(victimType==none) return 0;
-    return this.pieceValues[victimType]*10-this.pieceValues[attackerType];
+  getMVVLVA(move, board) {
+    const attackerPiece = board.piecesList[Move.startSqr(move)];
+    const victimType = Move.capturePieceType(move, board);
+    const attackerType = Piece.type(attackerPiece);
+
+    if (victimType == none) return 0;
+    return this.pieceValues[victimType] * 10 - this.pieceValues[attackerType];
   }
-  
+
   //Sorts the capture moves in descending order to look at the best captures first during quiescence
   sortQuiescenceMoves(moves, board) {
-    const scoredMoves = moves.map(m => {
+    const scoredMoves = moves.map((m) => {
       //MVVLA capture heuristic
       let score = this.getMVVLVA(m, board);
       //Look at promotions first
       if (Move.isPromotion(m)) score += 20000;
       return { move: m, score };
     });
-    return scoredMoves.sort((a, b) => b.score - a.score).map(e => e.move);
+    return scoredMoves.sort((a, b) => b.score - a.score).map((e) => e.move);
   }
-  
+
   //Sorts the moves in descending order to look at the best moves first during normal search
   sortMoves(moves, board, enemyPawnAttackMask, depth, ply = 0) {
     const ttEntry = this.transpositionTable.get(board.zobristKey);
     let ttMove = ttEntry ? ttEntry.bestMoveLocal || ttEntry.bestMove : null;
 
     // The PV move expected at this ply (from the previous completed iteration)
-    const pvMoveAtThisPly = (this.principalVariation && this.principalVariation.length > ply) ? this.principalVariation[ply] : null;
+    const pvMoveAtThisPly = this.principalVariation && this.principalVariation.length > ply ? this.principalVariation[ply] : null;
 
-    const scoredMoves = moves.map(m => {
+    const scoredMoves = moves.map((m) => {
       // Start with MVV-LVA for captures
       let score = this.getMVVLVA(m, board);
 
@@ -371,108 +412,107 @@ class CapraStar{
       return { move: m, score };
     });
 
-  return scoredMoves.sort((a, b) => b.score - a.score).map(e => e.move);
-}
+    return scoredMoves.sort((a, b) => b.score - a.score).map((e) => e.move);
+  }
 
-  
   //Calculates which game phase we are currently on (24 if all pieces remain, 0 if just kings)
   //to smoothly interpolate between piece square table values
-  calcGamePhase(board){
-    let phase=0;
+  calcGamePhase(board) {
+    let phase = 0;
     const pieces = [pawn, knight, bishop, rook, queen];
     for (const piece of pieces) {
       phase += this.phaseValues[piece] * (board.pieceCounts[white][piece] + board.pieceCounts[black][piece]);
     }
-    
+
     //Clamping phase in case of weird positions
-    if (phase<0) phase=0;
-    if (phase>this.totalPhase) phase=this.totalPhase;
+    if (phase < 0) phase = 0;
+    if (phase > this.totalPhase) phase = this.totalPhase;
     return phase;
   }
-  
+
   //Passing board as a parameter to allow for evaluation on a position the bot isn't playing in for testing
-  evaluate(board){
-    const perspectiveMult=(board.clrToMove==white) ? 1 : -1;
-    const phase=this.calcGamePhase(board); //Getting the current phase of the game (mid/end game) 
-    let allPiecesBB=board.piecesBB;
-    
-    let evaluation=0;
-    let whiteMaterial=0;
-    let blackMaterial=0;
-    
-    let hasBishop={
-      light : [false, false],
-      dark: [false, false]
-    }
-    
+  evaluate(board) {
+    const perspectiveMult = board.clrToMove == white ? 1 : -1;
+    const phase = this.calcGamePhase(board); //Getting the current phase of the game (mid/end game)
+    let allPiecesBB = board.piecesBB;
+
+    let evaluation = 0;
+    let whiteMaterial = 0;
+    let blackMaterial = 0;
+
+    let hasBishop = {
+      light: [false, false],
+      dark: [false, false],
+    };
+
     while (allPiecesBB != 0n) {
       const sqr = BBUtil.getLSBIndex(allPiecesBB);
       const piece = board.piecesList[sqr];
       const pieceType = Piece.type(piece);
       const pieceClr = Piece.clr(piece);
-      const sign=(pieceClr==white) ? 1 : -1;
-      const index=(pieceClr==white) ? sqr : BoardUtil.mirrorIndex(sqr);
-      let pieceValue=0;
-      
+      const sign = pieceClr == white ? 1 : -1;
+      const index = pieceClr == white ? sqr : BoardUtil.mirrorIndex(sqr);
+      let pieceValue = 0;
+
       //Adding up material count for both colors using piece square tables
       switch (pieceType) {
-        case pawn: 
+        case pawn:
           const midPValue = this.pawnEarlyPST[index]; //middlegame PST
           const endPValue = this.pawnEndPST[index]; //endgame PST
           pieceValue = this.pieceValues[pawn];
-          pieceValue += ((midPValue * phase) + (endPValue * (this.totalPhase - phase))) / this.totalPhase;
-        break;
-        case knight: 
+          pieceValue += (midPValue * phase + endPValue * (this.totalPhase - phase)) / this.totalPhase;
+          break;
+        case knight:
           pieceValue = this.pieceValues[knight] + this.knightPST[index];
           //Adding some value to outposts
-          if(this.isOutpost(sqr,pieceClr,board)) pieceValue+=this.outpostBonus;
-        break;
-        case bishop: 
+          if (this.isOutpost(sqr, pieceClr, board)) pieceValue += this.outpostBonus;
+          break;
+        case bishop:
           pieceValue = this.pieceValues[bishop] + this.bishopPST[index];
-          const bishopType=(BoardUtil.isLightSquare(sqr)) ? hasBishop.light : hasBishop.dark;
-          bishopType[pieceClr]=true;
-        break;
-        case rook: 
+          const bishopType = BoardUtil.isLightSquare(sqr) ? hasBishop.light : hasBishop.dark;
+          bishopType[pieceClr] = true;
+          break;
+        case rook:
           pieceValue = this.pieceValues[rook] + this.rookPST[index];
-          
+
           //Rewarding rooks being on open files
           const allPawnsBB = board.white.pawns | board.black.pawns;
           const rookFile = BoardUtil.squareToFile(sqr);
           const rookFileMask = BBUtil.fileMasks[rookFile];
-          if((rookFileMask & allPawnsBB) == 0n) pieceValue+=this.rookOpenFileBonus;
-          
+          if ((rookFileMask & allPawnsBB) == 0n) pieceValue += this.rookOpenFileBonus;
+
           //Rewarding rooks being connected
-          const allyRooks=(pieceClr==white) ? board.white.rooks : board.black.rooks;
-          const blockersMask=board.piecesBB;
-          
+          const allyRooks = pieceClr == white ? board.white.rooks : board.black.rooks;
+          const blockersMask = board.piecesBB;
+
           //If the current rook sees an ally rook (they are connected)
-          if((BBUtil.rookMoves(sqr,blockersMask) & allyRooks) != 0n) 
-          pieceValue+=this.connectedRooksBonus*0.5; //Divide by 2 to avoid giving bonus twice
-        break;
-        case queen: pieceValue = this.pieceValues[queen] + this.queenPST[index]; 
-        break;
+          if ((BBUtil.rookMoves(sqr, blockersMask) & allyRooks) != 0n) pieceValue += this.connectedRooksBonus * 0.5; //Divide by 2 to avoid giving bonus twice
+          break;
+        case queen:
+          pieceValue = this.pieceValues[queen] + this.queenPST[index];
+          break;
         case king:
           const midKValue = this.kingEarlyPST[index]; //middlegame PST
           const endKValue = this.kingEndPST[index]; //endgame PST
-          pieceValue = ((midKValue * phase) + (endKValue * (this.totalPhase - phase))) / this.totalPhase;
-        break;
+          pieceValue = (midKValue * phase + endKValue * (this.totalPhase - phase)) / this.totalPhase;
+          break;
       }
-      
-      if(pieceClr==white){
-        whiteMaterial+=this.pieceValues[pieceType];
-      }else{
-        blackMaterial+=this.pieceValues[pieceType];
+
+      if (pieceClr == white) {
+        whiteMaterial += this.pieceValues[pieceType];
+      } else {
+        blackMaterial += this.pieceValues[pieceType];
       }
-      
+
       evaluation += pieceValue * sign;
       allPiecesBB &= allPiecesBB - 1n;
     }
-    
+
     //Giving extra bonus for having pair of bishops of different color
-    if(hasBishop.light[white] && hasBishop.dark[white]) evaluation+=this.bishopPairBonus;
-    if(hasBishop.light[black] && hasBishop.dark[black]) evaluation-=this.bishopPairBonus;
-    
-    const pieceCount=board.pieceCounts[white][0]+board.pieceCounts[black][0];
+    if (hasBishop.light[white] && hasBishop.dark[white]) evaluation += this.bishopPairBonus;
+    if (hasBishop.light[black] && hasBishop.dark[black]) evaluation -= this.bishopPairBonus;
+
+    const pieceCount = board.pieceCounts[white][0] + board.pieceCounts[black][0];
     const wKingSquare = BBUtil.getLSBIndex(board.white.king);
     const bKingSquare = BBUtil.getLSBIndex(board.black.king);
 
@@ -481,29 +521,29 @@ class CapraStar{
       //Mop-up logic for endgames
       evaluation += this.calcMopUpScore(wKingSquare, bKingSquare, whiteMaterial, blackMaterial);
       evaluation -= this.calcMopUpScore(bKingSquare, wKingSquare, blackMaterial, whiteMaterial);
-    } else {    
+    } else {
       //Giving penalty for the king having many legal moves (undefended king) when not in endgame
-      const wKingMoves=BBUtil.queenMoves(wKingSquare,board.piecesBB);
-      evaluation-=BBUtil.countBits(wKingMoves)*this.kingMobilityPenalty; //If white king has a lot of moves it is good for black
-      const bKingMoves=BBUtil.queenMoves(bKingSquare,board.piecesBB);
-      evaluation+=BBUtil.countBits(bKingMoves)*this.kingMobilityPenalty; //If black king has a lot of moves it is good for white
-      evaluation+=this.evaluateKingSafety(board);
-      
+      const wKingMoves = BBUtil.queenMoves(wKingSquare, board.piecesBB);
+      evaluation -= BBUtil.countBits(wKingMoves) * this.kingMobilityPenalty; //If white king has a lot of moves it is good for black
+      const bKingMoves = BBUtil.queenMoves(bKingSquare, board.piecesBB);
+      evaluation += BBUtil.countBits(bKingMoves) * this.kingMobilityPenalty; //If black king has a lot of moves it is good for white
+      evaluation += this.evaluateKingSafety(board);
+
       //Small bonus for being the player to move (apparently counterproductive during endgames)
-      evaluation+=this.myTurnBonus*perspectiveMult;
+      evaluation += this.myTurnBonus * perspectiveMult;
     }
-    
+
     //Evaluating quality of pawns for each side
-    evaluation+=this.evaluatePawns(board);
+    evaluation += this.evaluatePawns(board);
     //evaluation+=this.evaluateMobility(board);
-    
-    return evaluation*perspectiveMult;
+
+    return evaluation * perspectiveMult;
   }
-  
-  calcMopUpScore(allyKingSqr, enemyKingSqr, allyMaterial, enemyMaterial){
+
+  calcMopUpScore(allyKingSqr, enemyKingSqr, allyMaterial, enemyMaterial) {
     //Only encourage to move the king closer if up material
-    if(allyMaterial<enemyMaterial) return 0;
-    
+    if (allyMaterial < enemyMaterial) return 0;
+
     //We want to minimize distance between kings
     const distance = BoardUtil.manhattanDistances[allyKingSqr][enemyKingSqr];
     //We want to maximize distance to edge (centralize our king)
@@ -511,7 +551,7 @@ class CapraStar{
     const mopUpScore = 2000 - distance * 50 + edgeDist * 150;
     return mopUpScore;
   }
-  
+
   evaluateMobility(board) {
     //Temporarily save which side is to move
     const clrToMove = board.clrToMove;
@@ -534,43 +574,43 @@ class CapraStar{
 
     return mobilityScore;
   }
-  
-  evaluateKingSafety(board){
-    const wKingSqr=BBUtil.getLSBIndex(board.white.king);
-    const bKingSqr=BBUtil.getLSBIndex(board.black.king);
-    let score=0;
-    
+
+  evaluateKingSafety(board) {
+    const wKingSqr = BBUtil.getLSBIndex(board.white.king);
+    const bKingSqr = BBUtil.getLSBIndex(board.black.king);
+    let score = 0;
+
     //Checking open files near white king
-    const whiteKingFile=BoardUtil.squareToFile(wKingSqr);
-    const whiteFileMask=BBUtil.fileMasks[whiteKingFile];
-    const whiteLeftFileMask  = whiteKingFile > 0 ? BBUtil.fileMasks[whiteKingFile - 1] : 18446744073709551615n;
+    const whiteKingFile = BoardUtil.squareToFile(wKingSqr);
+    const whiteFileMask = BBUtil.fileMasks[whiteKingFile];
+    const whiteLeftFileMask = whiteKingFile > 0 ? BBUtil.fileMasks[whiteKingFile - 1] : 18446744073709551615n;
     const whiteRightFileMask = whiteKingFile < 7 ? BBUtil.fileMasks[whiteKingFile + 1] : 18446744073709551615n;
-    
-    const whitePiecesNoKing = board.white.pieces & (~board.white.king);
-    
+
+    const whitePiecesNoKing = board.white.pieces & ~board.white.king;
+
     //Open file near the white king (no ally pieces blocking)
-    if((whiteFileMask & whitePiecesNoKing)==0n) score-=this.openFileNearKingPenalty; //good for black
-    if((whiteLeftFileMask & whitePiecesNoKing)==0n) score-=this.openFileNearKingPenalty; //good for black
-    if((whiteRightFileMask & whitePiecesNoKing)==0n) score-=this.openFileNearKingPenalty; //good for black
-    
+    if ((whiteFileMask & whitePiecesNoKing) == 0n) score -= this.openFileNearKingPenalty; //good for black
+    if ((whiteLeftFileMask & whitePiecesNoKing) == 0n) score -= this.openFileNearKingPenalty; //good for black
+    if ((whiteRightFileMask & whitePiecesNoKing) == 0n) score -= this.openFileNearKingPenalty; //good for black
+
     //Checking open files near black king
-    const blackKingFile=BoardUtil.squareToFile(bKingSqr);
-    const blackFileMask=BBUtil.fileMasks[blackKingFile];
-    const blackLeftFileMask  = blackKingFile > 0 ? BBUtil.fileMasks[blackKingFile - 1] : 18446744073709551615n;
+    const blackKingFile = BoardUtil.squareToFile(bKingSqr);
+    const blackFileMask = BBUtil.fileMasks[blackKingFile];
+    const blackLeftFileMask = blackKingFile > 0 ? BBUtil.fileMasks[blackKingFile - 1] : 18446744073709551615n;
     const blackRightFileMask = blackKingFile < 7 ? BBUtil.fileMasks[blackKingFile + 1] : 18446744073709551615n;
-    
-    const blackPiecesNoKing = board.black.pieces & (~board.black.king);
-    if((blackFileMask & blackPiecesNoKing)==0n) score+=this.openFileNearKingPenalty; //good for white
-    if((blackLeftFileMask & blackPiecesNoKing)==0n) score+=this.openFileNearKingPenalty; //good for white
-    if((blackRightFileMask & blackPiecesNoKing)==0n) score+=this.openFileNearKingPenalty; //good for white
-    
+
+    const blackPiecesNoKing = board.black.pieces & ~board.black.king;
+    if ((blackFileMask & blackPiecesNoKing) == 0n) score += this.openFileNearKingPenalty; //good for white
+    if ((blackLeftFileMask & blackPiecesNoKing) == 0n) score += this.openFileNearKingPenalty; //good for white
+    if ((blackRightFileMask & blackPiecesNoKing) == 0n) score += this.openFileNearKingPenalty; //good for white
+
     return score;
   }
-  
+
   //Evaluates all pawns on the board in hopes of keeping a better pawn structure
   evaluatePawns(board) {
-    const whitePawns=board.white.pawns;
-    const blackPawns=board.black.pawns;
+    const whitePawns = board.white.pawns;
+    const blackPawns = board.black.pawns;
     let score = 0;
     //Doubled pawns (more than 1 pawn on a file)
     for (let f = 0; f < 8; f++) {
@@ -599,20 +639,20 @@ class CapraStar{
 
       //Detecting pawn chains (defended by another pawn diagonally behind)
       //If the current pawn was of the opposite color, would it be able to capture enemy pawns
-      const supportMask = BBUtil.pawnAttacks(sqr,black);
+      const supportMask = BBUtil.pawnAttacks(sqr, black);
       if (whitePawns & supportMask) score += this.defendedPawnBonus;
-      
+
       //Detecting passed pawns and giving a bonus based on number of squares to end of the board
-      if(this.isPassedPawn(sqr, white, blackPawns)){
-        const distanceToEdge=BoardUtil.squareToRank(sqr);
-        score+=this.passedPawnBonuses[distanceToEdge];
+      if (this.isPassedPawn(sqr, white, blackPawns)) {
+        const distanceToEdge = BoardUtil.squareToRank(sqr);
+        score += this.passedPawnBonuses[distanceToEdge];
       }
-      
+
       //Blocked pawns (ally piece in front)
-      const forwardSqr = sqr-8;
-      const whitePiecesNoPawns = board.white.pieces & (~board.white.pawns);
-      if(BBUtil.isBitSet(forwardSqr,whitePiecesNoPawns)){
-        score-=this.blockedPawnPenalty; //Good for black
+      const forwardSqr = sqr - 8;
+      const whitePiecesNoPawns = board.white.pieces & ~board.white.pawns;
+      if (BBUtil.isBitSet(forwardSqr, whitePiecesNoPawns)) {
+        score -= this.blockedPawnPenalty; //Good for black
       }
     }
 
@@ -623,7 +663,7 @@ class CapraStar{
       bp &= bp - 1n;
 
       const file = BoardUtil.squareToFile(sqr);
-  
+
       //Isolated
       let adjFiles = 0n;
       if (file > 0) adjFiles |= BBUtil.fileMasks[file - 1];
@@ -631,180 +671,130 @@ class CapraStar{
       if ((blackPawns & adjFiles) === 0n) score += this.isolatedPawnPenalty;
 
       //Pawn chains
-      const supportMask = BBUtil.pawnAttacks(sqr,white);
+      const supportMask = BBUtil.pawnAttacks(sqr, white);
       if (blackPawns & supportMask) score -= this.defendedPawnBonus;
-      
+
       //Passed pawns
-      if(this.isPassedPawn(sqr, black, whitePawns)){
-        const distanceToEdge=7-BoardUtil.squareToRank(sqr);
-        score-=this.passedPawnBonuses[distanceToEdge];
+      if (this.isPassedPawn(sqr, black, whitePawns)) {
+        const distanceToEdge = 7 - BoardUtil.squareToRank(sqr);
+        score -= this.passedPawnBonuses[distanceToEdge];
       }
-      
+
       //Blocked pawns (ally piece in front)
-      const forwardSqr = sqr+8;
-      const blackPiecesNoPawns = board.black.pieces & (~board.black.pawns);
-      if(BBUtil.isBitSet(forwardSqr,blackPiecesNoPawns)){
-        score+=this.blockedPawnPenalty; //Good for white
+      const forwardSqr = sqr + 8;
+      const blackPiecesNoPawns = board.black.pieces & ~board.black.pawns;
+      if (BBUtil.isBitSet(forwardSqr, blackPiecesNoPawns)) {
+        score += this.blockedPawnPenalty; //Good for white
       }
     }
-    
-    const wKingSqr=BBUtil.getLSBIndex(board.white.king);
-    const bKingSqr=BBUtil.getLSBIndex(board.black.king);
+
+    const wKingSqr = BBUtil.getLSBIndex(board.white.king);
+    const bKingSqr = BBUtil.getLSBIndex(board.black.king);
     //Pawn shields (3 pawns in from of the king, +2 for every pawn found)
-    const whiteShieldMask = ((1n << BigInt(wKingSqr - 7)) |
-                             (1n << BigInt(wKingSqr - 8)) |
-                             (1n << BigInt(wKingSqr - 9))) & 0xFFFFFFFFFFFFFFFFn;
-    const blackShieldMask = ((1n << BigInt(bKingSqr + 7)) |
-                             (1n << BigInt(bKingSqr + 8)) |
-                             (1n << BigInt(bKingSqr + 9))) & 0xFFFFFFFFFFFFFFFFn;
+    const whiteShieldMask = ((1n << BigInt(wKingSqr - 7)) | (1n << BigInt(wKingSqr - 8)) | (1n << BigInt(wKingSqr - 9))) & 0xffffffffffffffffn;
+    const blackShieldMask = ((1n << BigInt(bKingSqr + 7)) | (1n << BigInt(bKingSqr + 8)) | (1n << BigInt(bKingSqr + 9))) & 0xffffffffffffffffn;
 
     score += BBUtil.countBits(whitePawns & whiteShieldMask) * this.kingShieldBonus;
     score -= BBUtil.countBits(blackPawns & blackShieldMask) * this.kingShieldBonus;
 
     return score;
   }
-  
-  isPassedPawn(pawnSqr, pawnClr, enemyPawns){
-    return (BBUtil.passedPawnMasks[pawnClr][pawnSqr] & enemyPawns)==0;
+
+  isPassedPawn(pawnSqr, pawnClr, enemyPawns) {
+    return (BBUtil.passedPawnMasks[pawnClr][pawnSqr] & enemyPawns) == 0;
   }
-  
-  isOutpost(knightSqr, knightClr, board){
+
+  isOutpost(knightSqr, knightClr, board) {
     //If the knight has no enemy pawns in front of it and has two allies defending it
     //We have an outpost
 
-    const allyPawns=(knightClr==white) ? board.white.pawns: board.black.pawns;
-    const enemyPawns=(knightClr==white) ? board.black.pawns: board.white.pawns;
-    const otherClr=(knightClr==white) ? black : white;
+    const allyPawns = knightClr == white ? board.white.pawns : board.black.pawns;
+    const enemyPawns = knightClr == white ? board.black.pawns : board.white.pawns;
+    const otherClr = knightClr == white ? black : white;
     const knightFile = BoardUtil.squareToFile(knightSqr);
     const knightFileMask = BBUtil.fileMasks[knightFile];
-  
-    const enemyPawnsMask = BBUtil.passedPawnMask(knightSqr,knightClr) & (~knightFileMask);
-    const pawnDefendersMask=BBUtil.pawnAttacks(knightSqr,otherClr);
-    return ((enemyPawnsMask & enemyPawns) == 0n) && ((pawnDefendersMask & allyPawns)!=0n);
+
+    const enemyPawnsMask = BBUtil.passedPawnMask(knightSqr, knightClr) & ~knightFileMask;
+    const pawnDefendersMask = BBUtil.pawnAttacks(knightSqr, otherClr);
+    return (enemyPawnsMask & enemyPawns) == 0n && (pawnDefendersMask & allyPawns) != 0n;
   }
-  
+
   //Initializes constants unique to the bot
-  initialize(){
+  initialize() {
     //Standard piece values (none, pawns, knights, bishops, rooks, queens, king)
-    this.pieceValues=[0,100,300,320,500,900,0]
-    
+    this.pieceValues = [0, 100, 300, 320, 500, 900, 0];
+
     //Bonus based on # of squares to first or last rank
-    this.passedPawnBonuses=[0, 80, 50, 40, 30, 20, 20 , 0];
-    this.isolatedPawnPenalty=15;
-    this.defendedPawnBonus=5;
-    this.doubledPawnsPenalty=20;
-    this.kingShieldBonus=10;
-    this.myTurnBonus=10;
-    this.bishopPairBonus=30;
-    this.kingMobilityPenalty=1;
-    this.rookOpenFileBonus=30;
-    this.connectedRooksBonus=20;
-    this.blockedPawnPenalty=5;
-    this.openFileNearKingPenalty=50*0;
-    this.mobilityWeight=2;
-    this.outpostBonus=20;
-    
-    this.mateScore=10000000;
-    this.maxExtensions=16;
+    this.passedPawnBonuses = [0, 80, 50, 40, 30, 20, 20, 0];
+    this.isolatedPawnPenalty = 15;
+    this.defendedPawnBonus = 5;
+    this.doubledPawnsPenalty = 20;
+    this.kingShieldBonus = 10;
+    this.myTurnBonus = 10;
+    this.bishopPairBonus = 30;
+    this.kingMobilityPenalty = 1;
+    this.rookOpenFileBonus = 30;
+    this.connectedRooksBonus = 20;
+    this.blockedPawnPenalty = 5;
+    this.openFileNearKingPenalty = 50 * 0;
+    this.mobilityWeight = 2;
+    this.outpostBonus = 20;
+
+    this.mateScore = 10000000;
+    this.maxExtensions = 16;
     this.killerMoves = Array.from({ length: 64 }, () => [null, null]);
     this.historyHeuristic = Array.from({ length: 7 }, () => Array(64).fill(0));
-    
+
     this.transpositionTable = new Map();
-    
+
     //How much each piece contributes to the "middlegame phase"
-    this.phaseValues = [0,0,1,1,2,4,0];
+    this.phaseValues = [0, 0, 1, 1, 2, 4, 0];
     //The maximum phase value (when all pieces are still on the board)
     this.totalPhase = 24;
-    
+
     /*PieceSquare tables*/
     //Initialized from white's point of view but indeces get mirrored in evaluation if black
-    
+
     this.pawnEarlyPST = [
-      0,  0,  0,  0,  0,  0,  0,  0,
-      50, 50, 50, 50, 50, 50, 50, 50,
-      10, 10, 20, 30, 30, 20, 10, 10,
-      5,  5, 10, 25, 25, 10,  5,  5,
-      0,  0,  0, 20, 20,  0,  0,  0,
-      5, -5,-10,  0,  0,-10, -5,  5,
-      5, 10, 10,-20,-20, 10, 10,  5,
-      0,  0,  0,  0,  0,  0,  0,  0
+      0, 0, 0, 0, 0, 0, 0, 0, 50, 50, 50, 50, 50, 50, 50, 50, 10, 10, 20, 30, 30, 20, 10, 10, 5, 5, 10, 25, 25, 10, 5, 5, 0, 0, 0, 20, 20, 0, 0, 0, 5,
+      -5, -10, 0, 0, -10, -5, 5, 5, 10, 10, -20, -20, 10, 10, 5, 0, 0, 0, 0, 0, 0, 0, 0,
     ];
-    
+
     this.pawnEndPST = [
-       0,  0,  0,  0,  0,  0,  0,  0,
-      80, 80, 80, 80, 80, 80, 80, 80,
-      50, 50, 50, 50, 50, 50, 50, 50,
-      30, 30, 30, 30, 30, 30, 30, 30,
-      20, 20, 20, 20, 20, 20, 20, 20,
-      10, 10, 10, 10, 10, 10, 10, 10,
-      10, 10, 10, 10, 10, 10, 10, 10,
-       0,  0,  0,  0,  0,  0,  0,  0,
+      0, 0, 0, 0, 0, 0, 0, 0, 80, 80, 80, 80, 80, 80, 80, 80, 50, 50, 50, 50, 50, 50, 50, 50, 30, 30, 30, 30, 30, 30, 30, 30, 20, 20, 20, 20, 20, 20,
+      20, 20, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 0, 0, 0, 0, 0, 0, 0, 0,
     ];
-    
+
     this.knightPST = [
-      -50,-40,-30,-30,-30,-30,-40,-50,
-      -40,-20,  0,  0,  0,  0,-20,-40,
-      -30,  0, 10, 15, 15, 10,  0,-30,
-      -30,  5, 15, 20, 20, 15,  5,-30,
-      -30,  0, 15, 20, 20, 15,  0,-30,
-      -30,  5, 10, 15, 15, 10,  5,-30,
-      -40,-20,  0,  5,  5,  0,-20,-40,
-      -50,-40,-30,-30,-30,-30,-40,-50,
+      -50, -40, -30, -30, -30, -30, -40, -50, -40, -20, 0, 0, 0, 0, -20, -40, -30, 0, 10, 15, 15, 10, 0, -30, -30, 5, 15, 20, 20, 15, 5, -30, -30, 0,
+      15, 20, 20, 15, 0, -30, -30, 5, 10, 15, 15, 10, 5, -30, -40, -20, 0, 5, 5, 0, -20, -40, -50, -40, -30, -30, -30, -30, -40, -50,
     ];
-    
+
     this.bishopPST = [
-      -20,-10,-10,-10,-10,-10,-10,-20,
-      -10,  0,  0,  0,  0,  0,  0,-10,
-      -10,  0,  5, 10, 10,  5,  0,-10,
-      -10,  5,  5, 10, 10,  5,  5,-10,
-      -10,  0, 10, 10, 10, 10,  0,-10,
-      -10, 10, 10, 10, 10, 10, 10,-10,
-      -10,  5,  0,  0,  0,  0,  5,-10,
-      -20,-10,-10,-10,-10,-10,-10,-20,
+      -20, -10, -10, -10, -10, -10, -10, -20, -10, 0, 0, 0, 0, 0, 0, -10, -10, 0, 5, 10, 10, 5, 0, -10, -10, 5, 5, 10, 10, 5, 5, -10, -10, 0, 10, 10,
+      10, 10, 0, -10, -10, 10, 10, 10, 10, 10, 10, -10, -10, 5, 0, 0, 0, 0, 5, -10, -20, -10, -10, -10, -10, -10, -10, -20,
     ];
-    
+
     this.rookPST = [
-      0,  0,  0,  0,  0,  0,  0,  0,
-      5, 10, 10, 10, 10, 10, 10,  5,
-     -5,  0,  0,  0,  0,  0,  0, -5,
-     -5,  0,  0,  0,  0,  0,  0, -5,
-     -5,  0,  0,  0,  0,  0,  0, -5,
-     -5,  0,  0,  0,  0,  0,  0, -5,
-     -5,  0,  0,  0,  0,  0,  0, -5,
-      0,  0,  0,  5,  5,  0,  0,  0
+      0, 0, 0, 0, 0, 0, 0, 0, 5, 10, 10, 10, 10, 10, 10, 5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0,
+      0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, 0, 0, 0, 5, 5, 0, 0, 0,
     ];
-    
+
     this.queenPST = [
-      -20,-10,-10, -5, -5,-10,-10,-20,
-      -10,  0,  0,  0,  0,  0,  0,-10, 
-      -10,  0,  5,  5,  5,  5,  0,-10,
-       -5,  0,  5,  5,  5,  5,  0, -5,
-        0,  0,  5,  5,  5,  5,  0, -5,
-      -10,  5,  5,  5,  5,  5,  0,-10,
-      -10,  0,  5,  0,  0,  0,  0,-10,
-      -20,-10,-10, -5, -5,-10,-10,-20
+      -20, -10, -10, -5, -5, -10, -10, -20, -10, 0, 0, 0, 0, 0, 0, -10, -10, 0, 5, 5, 5, 5, 0, -10, -5, 0, 5, 5, 5, 5, 0, -5, 0, 0, 5, 5, 5, 5, 0, -5,
+      -10, 5, 5, 5, 5, 5, 0, -10, -10, 0, 5, 0, 0, 0, 0, -10, -20, -10, -10, -5, -5, -10, -10, -20,
     ];
-    
+
     this.kingEarlyPST = [
-      -30,-40,-40,-50,-50,-40,-40,-30,
-      -30,-40,-40,-50,-50,-40,-40,-30,
-      -30,-40,-40,-50,-50,-40,-40,-30,
-      -30,-40,-40,-50,-50,-40,-40,-30,
-      -20,-30,-30,-40,-40,-30,-30,-20,
-      -10,-20,-20,-20,-20,-20,-20,-10,
-       20, 20,  0,  0,  0,  0, 20, 20,
-       20, 30, 10,  0,  0, 10, 30, 20
+      -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50,
+      -40, -40, -30, -20, -30, -30, -40, -40, -30, -30, -20, -10, -20, -20, -20, -20, -20, -20, -10, 20, 20, 0, 0, 0, 0, 20, 20, 20, 30, 10, 0, 0, 10,
+      30, 20,
     ];
-    
+
     this.kingEndPST = [
-      -50,-40,-30,-20,-20,-30,-40,-50,
-      -30,-20,-10,  0,  0,-10,-20,-30,
-      -30,-10, 20, 30, 30, 20,-10,-30,
-      -30,-10, 30, 40, 40, 30,-10,-30,
-      -30,-10, 30, 40, 40, 30,-10,-30,
-      -30,-10, 20, 30, 30, 20,-10,-30,
-      -30,-30,  0,  0,  0,  0,-30,-30,
-      -50,-30,-30,-30,-30,-30,-30,-50
+      -50, -40, -30, -20, -20, -30, -40, -50, -30, -20, -10, 0, 0, -10, -20, -30, -30, -10, 20, 30, 30, 20, -10, -30, -30, -10, 30, 40, 40, 30, -10,
+      -30, -30, -10, 30, 40, 40, 30, -10, -30, -30, -10, 20, 30, 30, 20, -10, -30, -30, -30, 0, 0, 0, 0, -30, -30, -50, -30, -30, -30, -30, -30, -30,
+      -50,
     ];
   }
 }
