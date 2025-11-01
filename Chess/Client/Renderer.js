@@ -87,7 +87,8 @@ export function setupBoard(FEN) {
 
 window.draw = function () {
   //background(251,251,251);
-  background(245);
+  //background(245);
+  background(72);
   drawBoard();
   highlightSquares(engine, color(45, 221, 162, 180), color(211, 42, 50, 180));
   drawCheckBubble(engine);
@@ -120,15 +121,17 @@ function drawBoard() {
   rectMode(CORNER);
   textSize(16);
   textAlign(CENTER);
+  const lightSquareColor = color("#EACCAE");
+  const darkSquareColor = color("#8B5D45");
   for (let r = 0; r < 8; r++) {
     for (let f = 0; f < 8; f++) {
       //Squares
       const isLightSquare = BoardUtil.isLightSquare(f, r);
-      fill(isLightSquare ? 240 : 100);
+      fill(isLightSquare ? lightSquareColor : darkSquareColor);
       rect(f * squareSize, r * squareSize, squareSize, squareSize);
 
       //Text
-      fill(isLightSquare ? 100 : 240);
+      fill(isLightSquare ? darkSquareColor : lightSquareColor);
       if (f == 0) text(8 - r, 10, squareSize * r + squareSize * 0.25);
       if (r == 7) text(String.fromCharCode(97 + f), squareSize * f + squareSize * 0.82, height - 10);
     }
@@ -189,7 +192,7 @@ function drawCapturedPieces(engine) {
     }
   }
 
-  fill(0);
+  fill(255);
   textSize(12);
   textAlign(CENTER);
   if (valueDifference < 0) {
@@ -283,7 +286,7 @@ function drawCheckBubble(engine) {
 }
 
 function drawUIText(engine) {
-  fill(0);
+  fill(255);
   noStroke();
   textSize(16);
   textAlign(CENTER);
@@ -303,19 +306,44 @@ function drawUITimers(engine) {
 
   if (engine.timers[white] != undefined) {
     fill(255, opacity);
+    if (engine.clrToMove == white) setGlow();
     rect(UICenter, (3 * height) / 4, timerWidth, timerHeight, 5);
+    unsetEffect();
     fill(0, opacity);
     text(engine.timers[white].getTime(), UICenter, (3 * height) / 4);
   }
-
   opacity = engine.clrToMove == black ? 255 : 100;
 
   if (engine.timers[black] != undefined) {
     fill(0, opacity);
+    if (engine.clrToMove == black) setGlow();
     rect(UICenter, height / 4, timerWidth, timerHeight, 5);
+    unsetEffect();
     fill(255, opacity);
     text(engine.timers[black].getTime(), UICenter, height / 4);
   }
+}
+
+function setShadow() {
+  // Access the canvas 2D context
+  drawingContext.shadowOffsetX = 5;
+  drawingContext.shadowOffsetY = 5;
+  drawingContext.shadowBlur = 15;
+  drawingContext.shadowColor = "rgba(0, 0, 0, 0.3)";
+}
+
+function unsetEffect() {
+  drawingContext.shadowBlur = 0;
+  drawingContext.shadowOffsetX = 0;
+  drawingContext.shadowOffsetY = 0;
+  drawingContext.shadowColor = 0;
+}
+
+function setGlow() {
+  drawingContext.shadowOffsetX = 0;
+  drawingContext.shadowOffsetY = 0;
+  drawingContext.shadowBlur = 30; //Bigger value = more diffuse glow
+  drawingContext.shadowColor = "rgba(255, 255, 255, 0.2)";
 }
 
 export let promotionMenu = {
