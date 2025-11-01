@@ -49,16 +49,19 @@
             <ol id="movesList"></ol>
           </div>
           <div id="moveBTNS">
-            <input type="button" class="styledButton btn-large" id="undoMoveBTN" value="↩" onclick="undoMove()"/>
-            <input type="button" class="styledButton btn-large" id="redoMoveBTN" value="↪" onclick="redoMove()"/>
+            <input type="button" class="btn-styled btn-large scalable" id="undoMoveBTN" value="↩" onclick="undoMove()"/>
+            <input type="button" class="btn-styled btn-large scalable" id="redoMoveBTN" value="↪" onclick="redoMove()"/>
           </div>
         </div>
         <div id="canvasContainer">
           <div id="overlay">
             <?php if ($mode === 'online'): ?>
-              <div class="loader"></div>
+              <div class="loader-container">
+                <div class="loader"></div>
+                <p>Waiting for another player to join...</p>
+              </div>
             <?php else: ?>
-              <button class="btn-styled-red btn-larger" id="playBTN" onclick="startGame()">
+              <button class="btn-styled-red btn-larger" id="playBTN">
                 <span class="material-icons" style="font-size: 3rem;">play_arrow</span>
               </button>
             <?php endif; ?>
