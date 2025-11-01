@@ -27,14 +27,15 @@ blackTimer = new Timer(blackMinutes, blackIncrementSeconds);
 engine.setTimers(whiteTimer, blackTimer);
 
 export function onPageLoaded() {
-  if (gameMode == "online") {
-    //If online mode, tell server this client is ready
-    startConnection();
-    sendToServer({ type: "ready" });
-  } else {
-    if (gameMode == "bot") initializeBot();
-    //If local or bot mode, start game immediately
-    handleGameStart();
+  switch (gameMode) {
+    case "online":
+      //If online mode, tell server this client is ready
+      startConnection();
+      sendToServer({ type: "ready" });
+      break;
+    case "bot":
+      initializeBot();
+      break;
   }
 }
 

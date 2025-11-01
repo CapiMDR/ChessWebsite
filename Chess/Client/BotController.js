@@ -9,7 +9,7 @@ export function initializeBot() {
 capraStar.onmessage = function (e) {
   switch (e.data.type) {
     case "result":
-      setBotEvaluation(e.data.bestMove, e.data.evaluation);
+      setBotEvaluation(null, e.data.evaluation);
       playMoveLocally(e.data.bestMove);
       break;
     case "evaluation":
