@@ -72,14 +72,6 @@ window.setup = function () {
   onPageLoaded();
 };
 
-function redoMove() {
-  engine.redoMove();
-}
-
-function undoMove() {
-  engine.undoMove();
-}
-
 export function setupBoard(FEN) {
   engine.board.init();
   engine.board.fillBoard(FEN.trim());
@@ -92,10 +84,10 @@ window.draw = function () {
   drawBoard();
   highlightSquares(engine, color(45, 221, 162, 180), color(211, 42, 50, 180));
   drawCheckBubble(engine);
+  drawLegalMoves(engine, color(45, 221, 162, 180));
   drawPieces(engine);
 
   //debugView(engine);
-  drawLegalMoves(engine, color(45, 221, 162, 180));
 
   drawBestMoveArrow();
   drawUIText(engine);
@@ -205,9 +197,9 @@ function drawCapturedPieces(engine) {
 function drawLegalMoves(engine, clr = color(0)) {
   //Only draw legal moves if it's this client's turn (aka not online opponent or bot's turn)
   if ((gameMode == "online" || gameMode == "bot") && clientColor != engine.clrToMove) return;
+  //Don't draw legal moves at all if undoing moves
+  if (engine.isUndoingMoves()) return;
 
-  fill(clr);
-  noStroke();
   for (let move of engine.moves) {
     const startSquare = Move.startSqr(move);
     const targetSquare = Move.targetSqr(move);
@@ -215,7 +207,20 @@ function drawLegalMoves(engine, clr = color(0)) {
 
     const file = BoardUtil.squareToFile(targetSquare);
     const rank = BoardUtil.squareToRank(targetSquare);
-    ellipse(file * squareSize + squareSize / 2, rank * squareSize + squareSize / 2, squareSize * 0.4);
+    const drawFile = file * squareSize + squareSize / 2;
+    const drawRank = rank * squareSize + squareSize / 2;
+    if (Move.isCapture(move, engine.board) && Move.flag(move) != enPassantFlag) {
+      //If the move is a capture draw a circle around the piece to not block it
+      noFill();
+      stroke(clr);
+      strokeWeight(10);
+      ellipse(drawFile, drawRank, 60, 60);
+    } else {
+      //Draw a normal ellipse otherwise
+      fill(clr);
+      noStroke();
+      ellipse(drawFile, drawRank, squareSize * 0.4);
+    }
   }
 }
 
@@ -417,6 +422,7 @@ let currentEval = 0;
 
 //Draws CapraStar's evaluation if active
 function drawBotEval() {
+  if (gameMode != "bot") return;
   const bestEvaluation = 2000; //How "great" should the evaluation be to cover the entire bar
   const mateScore = 10000000; //The highest score a bot can give to a move (mate next move)
 
@@ -489,15 +495,16 @@ export function playMoveSound(move) {
 }
 
 export function updateMoveList(move) {
-  //Update moves list UI
+  //Update moves list UI to show the SAN notation of all moves
   const movesList = document.getElementById("movesList");
   const moveListItems = movesList.getElementsByTagName("li");
-  const moveString = Move.toString(move);
-  if (engine.moveHistory.length % 2 == 1) {
+  const uciMove = Move.toString(move);
+  const sanMove = Move.UCIToSAN(uciMove, engine.board);
+  if (engine.moveHistory.length % 2 == 0) {
     const moveListItem = document.createElement("li");
     movesList.appendChild(moveListItem);
   }
-  moveListItems[moveListItems.length - 1].textContent += " " + moveString + " ";
+  moveListItems[moveListItems.length - 1].textContent += " " + sanMove + " ";
 }
 
 /*Debug functions*/

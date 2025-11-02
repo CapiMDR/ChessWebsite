@@ -1,0 +1,47 @@
+<div id="navigation">
+  <a href="/ChessWebsite/Landing/index.php" id="homeLink">
+    <h1 class="scalable">Chess Website</h1>
+  </a>
+
+  <div id="navRight">
+    <?php 
+      $user = isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : 'Guest'; 
+      $initial = strtoupper(substr($user,0,1));
+    ?>
+    <form id="logoutForm" action="/ChessWebsite/Landing/logout.php" method="POST">
+      <div id="userInfo">
+        <div id="usernameContainer">
+          <button id="userBtn" class="btn-navigation" type="button" onclick="toggleDropdown(event)">
+            <span id="avatar"><?php echo $initial; ?></span>
+            <h4><?php echo $user; ?></h4>
+            <span>▾</span>
+          </button>
+          <div id="userDropdown">
+            <button type="button" class="btn-dropdown" onclick="viewProfile()">Profile</button>
+            <button type="submit" class="btn-dropdown btn-dropdown-red">Log out</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const userBtn = document.getElementById("userBtn");
+    const userDropdown = document.getElementById("userDropdown");
+
+    function toggleDropdown(e) {
+      userDropdown.classList.toggle("show");
+    }
+
+    function viewProfile() {
+      window.location.href = "/ChessWebsite/Landing/profile.php";
+    }
+
+    //Close when clicking outside
+    document.addEventListener("click", function (e) {
+      if (!document.getElementById("usernameContainer").contains(e.target)) {
+        if (userDropdown.classList.contains("show")) userDropdown.classList.remove("show");
+      }
+    });
+  </script>
+</div>

@@ -1,0 +1,15 @@
+<div id="background">
+  <div class="chess-piece">♚</div>
+  <div class="chess-piece">♛</div>
+  <div class="chess-piece">♘</div>
+  <div class="chess-piece">♗</div>
+
+  <script>
+    document.querySelectorAll(".chess-piece").forEach((piece) => {
+      const speed = 20 + Math.random() * 20;
+      const direction = Math.random() > 0.5 ? "normal" : "reverse";
+      piece.style.setProperty("--spin-speed", `${speed}s`);
+      piece.style.setProperty("--spin-direction", direction);
+    });
+  </script>
+</div>

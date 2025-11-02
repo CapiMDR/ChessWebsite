@@ -10,7 +10,8 @@
         exit();
     }
 
-    $mode = $_GET['mode'] ?? 'online'; // Game mode chosen from landing page
+    $mode = $_POST['mode'] ?? 'local'; // Game mode chosen from landing page
+    if($mode!="online" && $mode!="bot" && $mode!="local") $mode='local'; //Change to local if invalid game mode
   ?>
   <head>
     <title>Playing Chess</title>
@@ -38,10 +39,9 @@
     </script>
   </head>
   <body>
-    <div class="chess-piece">♔</div>
-    <div class="chess-piece">♛</div>
+    <?php include('../../Components/backgroundArt.html'); ?>
     <div id="container">
-      <?php include('../../Landing/navigationBar.php'); ?>
+      <?php include('../../Components/navigationBar.html'); ?>
       <div id="gameRow">
         <div id="leftColumn">
           <div id="movesContainer">

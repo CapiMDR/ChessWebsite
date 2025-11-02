@@ -12,6 +12,7 @@
         <title>Log in - Chess Website</title>
         <meta charset="UTF-8">
         <link href="../Assets/CSS/style.css" rel="stylesheet">
+        <link href="../Assets/CSS/login.css" rel="stylesheet">
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
@@ -20,12 +21,10 @@
         <script src="authenticate.js"></script>
     </head>
     <body>
-        <div class="chess-piece">♔</div>
-        <div class="chess-piece">♛</div>
-
+        <?php include('../Components/backgroundArt.html'); ?>
         <div id="container" class="login-container">
             <div class="login-box styledBox">
-                <form id="loginForm" class="login-form">
+                <form id="loginForm" class="login-form" onsubmit="authenticateAccount(event)">
                     <div class="form-group">
                         <label for="user">
                             <span class="material-icons">person</span>
@@ -40,7 +39,7 @@
                         </label>
                         <input type="password" class="styledTextField" id="password" name="password" required>
                     </div>
-                    <button type="button" class="btn-styled-red login-btn" onclick="authenticateAccount()">
+                    <button type="submit" class="btn-styled-red login-btn">
                         <span class="material-icons">login</span>
                         Log in
                     </button>

@@ -24,14 +24,13 @@
     </script>
   </head>
   <body>
-    <div class="chess-piece">♔</div>
-    <div class="chess-piece">♛</div>
+    <?php include('../Components/backgroundArt.html'); ?>
     <div id="container">
-      <?php include('navigationBar.php'); ?>
+      <?php include('../Components/navigationBar.html'); ?>
       <div id="menuContainer">
         <div id="leftColumn" class="styledBox">
           <div id="menuBTNS">
-            <form id="gameForm" action="/ChessWebsite/Chess/Client/gameIndex.php" method="GET">
+            <form id="gameForm" action="/ChessWebsite/Chess/Client/gameIndex.php" method="POST">
               <input type="hidden" name="mode" id="gameMode" value="">
               <button class="btn-styled btn-large movable" type="button" onclick="setMode('online')">
                 <span class="material-icons">people</span>
