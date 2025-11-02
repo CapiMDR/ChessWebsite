@@ -1,4 +1,5 @@
-function authenticateAccount() {
+function authenticateAccount(event) {
+  event.preventDefault();
   const user = document.getElementById("user").value;
   const password = document.getElementById("password").value;
 

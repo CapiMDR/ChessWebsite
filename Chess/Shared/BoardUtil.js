@@ -33,6 +33,11 @@ export class BoardUtil {
     return file;
   }
 
+  //Given a file number, returns its letter
+  static fileToChar(file) {
+    return String.fromCharCode("a".charCodeAt(0) + file);
+  }
+
   static nameToRank(sqr) {
     const rankChar = sqr[1];
     const rank = parseInt(rankChar, 10) - 1;

@@ -1,6 +1,6 @@
 //Runs a game locally using the moves/results received from the server
 import { Timer } from "../Shared/Timer.js";
-import { Engine } from "../Shared/Engine.js";
+import { Engine, GameResult } from "../Shared/Engine.js";
 import { playMoveSound, playSound, updateMoveList, lastEvaluation } from "./Renderer.js";
 import { sendToServer, startConnection } from "./ClientNetwork.js";
 import { initializeBot, startBotSearch } from "./BotController.js";
@@ -70,6 +70,9 @@ export function handleGameEnd() {
 
 //Registers a move played locally. If multiplayer, sends it to the server for validation, otherwise just plays it immediately
 export function registerMove(playedMove) {
+  //Don't register any move locally if undoing moves
+  if (engine.isUndoingMoves()) return;
+
   switch (gameMode) {
     case "online":
       //Only send move to server if it's this client's turn
@@ -91,13 +94,32 @@ export function registerMove(playedMove) {
 
 //Any move received is played on the local board
 export function playMoveLocally(move, shouldPlaySounds = true) {
+  //TODO: Allow for move undoing/redoing during the game and resynching the board when a new move arrives
   if (shouldPlaySounds) playMoveSound(move);
+  updateMoveList(move);
   engine.playMove(move, false);
   if (engine.inCheck && shouldPlaySounds) playSound("Check");
-  updateMoveList(move);
 }
 
 export function setBotEvaluation(bestMove, evaluation) {
   lastEvaluation.bestMove = bestMove;
   lastEvaluation.evaluation = engine.clrToMove == white ? evaluation : -evaluation;
 }
+
+window.redoMove = function () {
+  if (engine.result == GameResult.inProgress) return;
+  if (engine.redoHistory.length == 0) return;
+  const moveToRedo = engine.redoHistory[engine.redoHistory.length - 1];
+  playMoveSound(moveToRedo);
+  engine.redoMove();
+  if (engine.inCheck) playSound("Check");
+};
+
+window.undoMove = function () {
+  if (engine.result == GameResult.inProgress) return;
+  if (engine.moveHistory.length == 0) return;
+  const moveToUndo = engine.moveHistory[engine.moveHistory.length - 1];
+  engine.undoMove();
+  playMoveSound(moveToUndo);
+  if (engine.inCheck) playSound("Check");
+};
