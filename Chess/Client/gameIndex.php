@@ -21,6 +21,7 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="../../Assets/CSS/style.css">
     <link rel="stylesheet" type="text/css" href="../../Assets/CSS/game.css">
+    <link rel="shortcut icon" href="../../Assets/Images/favicon.ico" type="image/x-icon">
     <meta charset="utf-8" />
     <script>
       //Passing game mode to JS
