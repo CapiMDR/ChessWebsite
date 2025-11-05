@@ -6,13 +6,13 @@ import { BoardUtil } from "../Shared/BoardUtil.js";
 import { white, black, none, pawn, knight, bishop, rook, queen, king, enPassantFlag, castleFlag } from "../Shared/Constants.js";
 import { selectedSquare, dragging } from "./Input.js";
 import { GameResult } from "../Shared/Engine.js";
-import { engine, clientColor, onPageLoaded, gameMode } from "./ClientController.js";
+import { engine, clientColor, flipBoard, onPageLoaded, gameMode } from "./ClientController.js";
 
 const windowHeight = window.innerHeight;
-const boardSize = windowHeight * 0.9 * 0.8;
+export const boardSize = windowHeight * 0.9 * 0.8;
+export const squareSize = boardSize / 8;
 const evalBarThickness = windowHeight * 0.03;
 const UISize = windowHeight * 0.6 * 0.8;
-export const squareSize = boardSize / 8;
 const UICenter = boardSize + (UISize + evalBarThickness) * 0.5;
 
 let wP_Icon;
@@ -96,16 +96,6 @@ window.draw = function () {
   if (promotionMenu.active) drawPromotionUI(engine);
   drawBotEval(engine);
   drawDraggedPiece(engine);
-
-  //Undo last move - rewind (z key)
-  if (keyIsDown(90)) {
-    engine.undoMove();
-  }
-
-  //Redo last undone move - fastforward (x key)
-  if (keyIsDown(88)) {
-    engine.redoMove();
-  }
 };
 
 function drawBoard() {
@@ -113,19 +103,29 @@ function drawBoard() {
   rectMode(CORNER);
   textSize(16);
   textAlign(CENTER);
+
   const lightSquareColor = color("#EACCAE");
   const darkSquareColor = color("#8B5D45");
+
   for (let r = 0; r < 8; r++) {
     for (let f = 0; f < 8; f++) {
+      const drawFile = adjustFile(f);
+      const drawRank = adjustRank(r);
+
       //Squares
       const isLightSquare = BoardUtil.isLightSquare(f, r);
       fill(isLightSquare ? lightSquareColor : darkSquareColor);
-      rect(f * squareSize, r * squareSize, squareSize, squareSize);
+      rect(drawFile * squareSize, drawRank * squareSize, squareSize, squareSize);
 
       //Text
       fill(isLightSquare ? darkSquareColor : lightSquareColor);
-      if (f == 0) text(8 - r, 10, squareSize * r + squareSize * 0.25);
-      if (r == 7) text(String.fromCharCode(97 + f), squareSize * f + squareSize * 0.82, height - 10);
+      if (!flipBoard) {
+        if (f == 0) text(8 - r, 10, squareSize * r + squareSize * 0.25);
+        if (r == 7) text(String.fromCharCode(97 + f), squareSize * f + squareSize * 0.82, height - 10);
+      } else {
+        if (f == 7) text(8 - r, 10, squareSize * (7 - r) + squareSize * 0.25);
+        if (r == 7) text(String.fromCharCode(104 - f), squareSize * f + squareSize * 0.82, height - 10);
+      }
     }
   }
 }
@@ -133,30 +133,34 @@ function drawBoard() {
 function drawPieces(engine) {
   const board = engine.board;
   imageMode(CENTER);
+
   let allPieces = board.piecesBB;
   while (allPieces != 0n) {
     const sqr = BBUtil.getLSBIndex(allPieces);
     allPieces &= allPieces - 1n;
+
     //Skip if drawing dragged piece (handled later)
     if (dragging && sqr == selectedSquare) continue;
+
     const file = BoardUtil.squareToFile(sqr);
     const rank = BoardUtil.squareToRank(sqr);
     const piece = board.piecesList[sqr];
     const img = getImageFromPiece(piece);
 
-    const drawFile = file * squareSize + squareSize / 2;
-    const drawRank = rank * squareSize + squareSize / 2;
+    const drawFile = adjustFile(file) * squareSize + squareSize / 2;
+    const drawRank = adjustRank(rank) * squareSize + squareSize / 2;
 
     image(img, drawFile, drawRank, squareSize, squareSize);
   }
 }
 
 function drawDraggedPiece(engine) {
-  if (selectedSquare == undefined) return;
+  if (selectedSquare === undefined) return;
   if (!dragging) return;
   if (!BBUtil.isBitSet(selectedSquare, engine.board.piecesBB)) return;
+
   const piece = engine.board.piecesList[selectedSquare];
-  let img = getImageFromPiece(piece);
+  const img = getImageFromPiece(piece);
 
   image(img, mouseX, mouseY, squareSize * 1.2, squareSize * 1.2);
 }
@@ -195,9 +199,8 @@ function drawCapturedPieces(engine) {
 }
 
 function drawLegalMoves(engine, clr = color(0)) {
-  //Only draw legal moves if it's this client's turn (aka not online opponent or bot's turn)
+  //Only draw legal moves if it's this client's turn
   if ((gameMode == "online" || gameMode == "bot") && clientColor != engine.clrToMove) return;
-  //Don't draw legal moves at all if undoing moves
   if (engine.isUndoingMoves()) return;
 
   for (let move of engine.moves) {
@@ -207,16 +210,17 @@ function drawLegalMoves(engine, clr = color(0)) {
 
     const file = BoardUtil.squareToFile(targetSquare);
     const rank = BoardUtil.squareToRank(targetSquare);
-    const drawFile = file * squareSize + squareSize / 2;
-    const drawRank = rank * squareSize + squareSize / 2;
+    const drawFile = adjustFile(file) * squareSize + squareSize / 2;
+    const drawRank = adjustRank(rank) * squareSize + squareSize / 2;
+
     if (Move.isCapture(move, engine.board) && Move.flag(move) != enPassantFlag) {
-      //If the move is a capture draw a circle around the piece to not block it
+      //If capture, draw a hollow circle
       noFill();
       stroke(clr);
       strokeWeight(10);
       ellipse(drawFile, drawRank, 60, 60);
     } else {
-      //Draw a normal ellipse otherwise
+      //Otherwise, draw normal filled dot
       fill(clr);
       noStroke();
       ellipse(drawFile, drawRank, squareSize * 0.4);
@@ -253,39 +257,51 @@ function getImageFromPiece(piece) {
 
 function highlightSquares(engine, selectedClr = color(0), moveClr = color(0)) {
   noStroke();
-  //Highlighting selected piece original square
+  //Highlight selected piece original square
   if (selectedSquare != undefined) {
     fill(selectedClr);
     const selectedFile = BoardUtil.squareToFile(selectedSquare);
     const selectedRank = BoardUtil.squareToRank(selectedSquare);
-    rect(selectedFile * squareSize, selectedRank * squareSize, squareSize, squareSize);
+    const drawFile = adjustFile(selectedFile);
+    const drawRank = adjustRank(selectedRank);
+    rect(drawFile * squareSize, drawRank * squareSize, squareSize, squareSize);
   }
 
-  //Highlighting last move's start and target squares
+  //Highlight last move's start and target squares
   if (engine.moveHistory.length == 0) return;
   const lastMove = engine.moveHistory[engine.moveHistory.length - 1];
+
   const startSquare = Move.startSqr(lastMove);
+  const targetSquare = Move.targetSqr(lastMove);
+
   const startFile = BoardUtil.squareToFile(startSquare);
   const startRank = BoardUtil.squareToRank(startSquare);
-
-  const targetSquare = Move.targetSqr(lastMove);
   const targetFile = BoardUtil.squareToFile(targetSquare);
   const targetRank = BoardUtil.squareToRank(targetSquare);
+
+  const drawStartFile = adjustFile(startFile);
+  const drawStartRank = adjustRank(startRank);
+  const drawTargetFile = adjustFile(targetFile);
+  const drawTargetRank = adjustRank(targetRank);
+
   fill(moveClr);
-  rect(startFile * squareSize, startRank * squareSize, squareSize, squareSize);
-  rect(targetFile * squareSize, targetRank * squareSize, squareSize, squareSize);
+  rect(drawStartFile * squareSize, drawStartRank * squareSize, squareSize, squareSize);
+  rect(drawTargetFile * squareSize, drawTargetRank * squareSize, squareSize, squareSize);
 }
 
 function drawCheckBubble(engine) {
+  //Draw red circle around king in check (if any)
   if (!engine.moveGenerator.inCheck) return;
   imageMode(CENTER);
   const kingBB = engine.clrToMove == white ? engine.board.white.king : engine.board.black.king;
   const kingSqr = BBUtil.getLSBIndex(kingBB);
   const kingFile = BoardUtil.squareToFile(kingSqr);
   const kingRank = BoardUtil.squareToRank(kingSqr);
+
   tint(255, 0, 0);
-  const drawFile = kingFile * squareSize + squareSize * 0.5;
-  const drawRank = kingRank * squareSize + squareSize * 0.5;
+  const drawFile = adjustFile(kingFile) * squareSize + squareSize * 0.5;
+  const drawRank = adjustRank(kingRank) * squareSize + squareSize * 0.5;
+
   image(check_Glow, drawFile, drawRank, squareSize * 2, squareSize * 2);
   noTint();
 }
@@ -305,50 +321,35 @@ function drawUIText(engine) {
 function drawUITimers(engine) {
   textAlign(CENTER, CENTER);
   rectMode(CENTER);
-  let opacity = engine.clrToMove == white ? 255 : 100;
+
   const timerWidth = UISize * 0.3;
   const timerHeight = UISize * 0.15;
 
+  //Positions depending on flip
+  const whiteY = flipBoard ? height / 4 : (3 * height) / 4;
+  const blackY = flipBoard ? (3 * height) / 4 : height / 4;
+
+  // --- White Timer ---
+  let opacity = engine.clrToMove == white ? 255 : 100;
   if (engine.timers[white] != undefined) {
     fill(255, opacity);
     if (engine.clrToMove == white) setGlow();
-    rect(UICenter, (3 * height) / 4, timerWidth, timerHeight, 5);
-    unsetEffect();
+    rect(UICenter, whiteY, timerWidth, timerHeight, 5);
+    unsetEffects();
     fill(0, opacity);
-    text(engine.timers[white].getTime(), UICenter, (3 * height) / 4);
+    text(engine.timers[white].getTime(), UICenter, whiteY);
   }
-  opacity = engine.clrToMove == black ? 255 : 100;
 
+  // --- Black Timer ---
+  opacity = engine.clrToMove == black ? 255 : 100;
   if (engine.timers[black] != undefined) {
     fill(0, opacity);
     if (engine.clrToMove == black) setGlow();
-    rect(UICenter, height / 4, timerWidth, timerHeight, 5);
-    unsetEffect();
+    rect(UICenter, blackY, timerWidth, timerHeight, 5);
+    unsetEffects();
     fill(255, opacity);
-    text(engine.timers[black].getTime(), UICenter, height / 4);
+    text(engine.timers[black].getTime(), UICenter, blackY);
   }
-}
-
-function setShadow() {
-  // Access the canvas 2D context
-  drawingContext.shadowOffsetX = 5;
-  drawingContext.shadowOffsetY = 5;
-  drawingContext.shadowBlur = 15;
-  drawingContext.shadowColor = "rgba(0, 0, 0, 0.3)";
-}
-
-function unsetEffect() {
-  drawingContext.shadowBlur = 0;
-  drawingContext.shadowOffsetX = 0;
-  drawingContext.shadowOffsetY = 0;
-  drawingContext.shadowColor = 0;
-}
-
-function setGlow() {
-  drawingContext.shadowOffsetX = 0;
-  drawingContext.shadowOffsetY = 0;
-  drawingContext.shadowBlur = 30; //Bigger value = more diffuse glow
-  drawingContext.shadowColor = "rgba(255, 255, 255, 0.2)";
 }
 
 export let promotionMenu = {
@@ -377,30 +378,32 @@ function drawPromotionUI(engine) {
 
 //Draws arrow between two squares
 function drawArrow(fromSq, toSq, clr = color(0)) {
-  //Convert square index into x,y coordinates (center of square)
-  let fromFile = BoardUtil.squareToFile(fromSq);
-  let fromRank = BoardUtil.squareToRank(fromSq);
-  let toFile = BoardUtil.squareToFile(toSq);
-  let toRank = BoardUtil.squareToRank(toSq);
+  //Convert square index into file/rank
+  let fromFile = adjustFile(BoardUtil.squareToFile(fromSq));
+  let fromRank = adjustRank(BoardUtil.squareToRank(fromSq));
+  let toFile = adjustFile(BoardUtil.squareToFile(toSq));
+  let toRank = adjustRank(BoardUtil.squareToRank(toSq));
 
-  let x1 = fromFile * squareSize + squareSize / 2;
-  let y1 = fromRank * squareSize + squareSize / 2; // flip rank for drawing
-  let x2 = toFile * squareSize + squareSize / 2;
-  let y2 = toRank * squareSize + squareSize / 2;
+  //Convert to pixel coordinates (center of each square)
+  const x1 = fromFile * squareSize + squareSize / 2;
+  const y1 = fromRank * squareSize + squareSize / 2;
+  const x2 = toFile * squareSize + squareSize / 2;
+  const y2 = toRank * squareSize + squareSize / 2;
 
-  //Draw line
+  //Draw main arrow line
   stroke(clr);
   strokeWeight(8);
   line(x1, y1, x2, y2);
 
   //Draw arrowhead
-  let angle = atan2(y1 - y2, x1 - x2);
+  const angle = atan2(y2 - y1, x2 - x1);
   push();
   translate(x2, y2);
-  rotate(angle - HALF_PI);
+  rotate(angle + HALF_PI);
   noStroke();
   fill(clr);
-  triangle(-20, 20, 20, 20, 0, -10); // arrowhead size
+  const size = 20;
+  triangle(-size, size, size, size, 0, -size * 0.5);
   pop();
 }
 
@@ -474,6 +477,38 @@ export function playSound(type) {
   }
 }
 
+//Adjust file and rank when the board is rotated visually
+function adjustFile(file) {
+  return flipBoard ? 7 - file : file;
+}
+
+function adjustRank(rank) {
+  return flipBoard ? 7 - rank : rank;
+}
+
+function setShadow() {
+  //Access the canvas 2D context
+  drawingContext.shadowOffsetX = 5;
+  drawingContext.shadowOffsetY = 5;
+  drawingContext.shadowBlur = 15;
+  drawingContext.shadowColor = "rgba(0, 0, 0, 0.3)";
+}
+
+function setGlow() {
+  drawingContext.shadowOffsetX = 0;
+  drawingContext.shadowOffsetY = 0;
+  drawingContext.shadowBlur = 30; //Bigger value = more diffuse glow
+  drawingContext.shadowColor = "rgba(255, 255, 255, 0.2)";
+}
+
+//Removes shadows and glows
+function unsetEffects() {
+  drawingContext.shadowBlur = 0;
+  drawingContext.shadowOffsetX = 0;
+  drawingContext.shadowOffsetY = 0;
+  drawingContext.shadowColor = 0;
+}
+
 //Notes: Move must not have been played already to play the right sound. This function does not play check sounds
 export function playMoveSound(move) {
   const flag = Move.flag(move);
@@ -542,7 +577,7 @@ function printDebugText() {
   noStroke();
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
-      pos = createVector(squareSize * i, squareSize * j);
+      const pos = createVector(squareSize * i, squareSize * j);
       fill(255, 0, 255);
       text(8 * j + i, pos.x + 10, pos.y + 55);
       fill(0, 190, 255);
