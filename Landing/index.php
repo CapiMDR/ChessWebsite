@@ -15,6 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/addons/p5.sound.min.js"></script>
     <link rel="stylesheet" type="text/css" href="../Assets/CSS/style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="shortcut icon" href="../Assets/Images/favicon.ico" type="image/x-icon">
     <meta charset="utf-8" />
     <script>
       function setMode(mode) {

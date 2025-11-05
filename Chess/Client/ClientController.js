@@ -4,7 +4,7 @@ import { Engine, GameResult } from "../Shared/Engine.js";
 import { playMoveSound, playSound, updateMoveList, lastEvaluation } from "./Renderer.js";
 import { sendToServer, startConnection } from "./ClientNetwork.js";
 import { initializeBot, startBotSearch } from "./BotController.js";
-import { white } from "../Shared/Constants.js";
+import { white, black } from "../Shared/Constants.js";
 
 export const gameMode = window.gameMode;
 
@@ -20,6 +20,7 @@ const blackIncrementSeconds = 3;
 export let engine = new Engine(startFEN); //Starting position, white timer, black timer;
 export let clientColor; //Color assigned to this client by the server
 clientColor = white; //TEMPORARY DEFAULT ASSIGNMENT TO WHITE FOR PLAYING AGAINST THE BOT UNTIL USER SELECTION IS ALLOWED BEFORE GAME START
+export let flipBoard; //Controls whether the board should be drawn in black's perspective
 
 //Minutes & increment in seconds
 whiteTimer = new Timer(whiteMinutes, whiteIncrementSeconds);
@@ -35,6 +36,10 @@ export function onPageLoaded() {
       break;
     case "bot":
       initializeBot();
+      flipBoard = clientColor == black ? true : false;
+      break;
+    case "local":
+      flipBoard = clientColor == black ? true : false;
       break;
   }
 }
@@ -49,6 +54,7 @@ export function playAllServerMoves(gameStatus) {
 //Rerceives assigned color from server
 export function receiveColorFromServer(color) {
   clientColor = color;
+  flipBoard = clientColor == black ? true : false;
 }
 
 export function handleGameStart() {
@@ -99,10 +105,15 @@ export function playMoveLocally(move, shouldPlaySounds = true) {
   updateMoveList(move);
   engine.playMove(move, false);
   if (engine.inCheck && shouldPlaySounds) playSound("Check");
+
+  if (gameMode == "local") {
+    flipBoard = engine.clrToMove == black ? true : false;
+  }
 }
 
 export function setBotEvaluation(bestMove, evaluation) {
   lastEvaluation.bestMove = bestMove;
+  //The bot always returns a positive score when it is winning, so multiply by -1 when black is winning for standard visualization
   lastEvaluation.evaluation = engine.clrToMove == white ? evaluation : -evaluation;
 }
 
