@@ -32,7 +32,7 @@
       <?php endif; ?>
     </script>
     <script type="module">
-      import { handleGameStart, resignGame } from './ClientController.js';
+      import { handleGameStart, resignGame, getHint } from './ClientController.js';
 
       //Adding a listener to the play button to handle game start on press
       document.addEventListener("DOMContentLoaded", () => {
@@ -44,6 +44,11 @@
         const resignBtn = document.getElementById("resignBTN");
         if (resignBtn) {
           resignBtn.addEventListener("click", resignGame);
+        }
+
+        const hintBtn = document.getElementById("hintBTN");
+        if (hintBtn) {
+          hintBtn.addEventListener("click", getHint);
         }
       });
     </script>
@@ -61,10 +66,14 @@
           <div id="moveBTNS">
             <input type="button" class="btn-styled btn-large scalable" id="undoMoveBTN" value="↩" onclick="undoMove()"/>
             <input type="button" class="btn-styled btn-large scalable" id="redoMoveBTN" value="↪" onclick="redoMove()"/>
-
             <?php if ($mode === 'online'): ?>
               <button class="btn-styled btn-large scalable" id="resignBTN">
                 <span class="material-icons">flag</span>
+              </button>
+            <?php endif; ?>
+            <?php if ($mode === 'analyze'): ?>
+              <button class="btn-styled btn-large scalable" id="hintBTN">
+                <span class="material-icons">lightbulb</span>
               </button>
             <?php endif; ?>
           </div>

@@ -14,14 +14,14 @@ capraStar.onmessage = function (e) {
       break;
     case "evaluation":
       setBotEvaluation(e.data.bestMove, e.data.evaluation);
-      console.log("Best Move: " + Move.toString(e.data.bestMove));
-      console.log("Evaluation: " + (lastEval * 0.01).toFixed(1));
-      let pvString = "";
-      for (let move of e.data.pv) {
-        pvString += Move.toString(move) + " ";
-      }
-      console.log("Principal variation: " + pvString);
-      console.log("Time taken: " + e.data.timeTaken + " ms");
+      //console.log("Best Move: " + Move.toString(e.data.bestMove));
+      //console.log("Evaluation: " + (lastEval * 0.01).toFixed(1));
+      // let pvString = "";
+      // for (let move of e.data.pv) {
+      //   pvString += Move.toString(move) + " ";
+      // }
+      //console.log("Principal variation: " + pvString);
+      //console.log("Time taken: " + e.data.timeTaken + " ms");
       break;
     default:
       console.log("Worker log: " + e.data);
@@ -36,9 +36,19 @@ capraStar.onmessageerror = (err) => {
   console.error("Worker message error:", err);
 };
 
+//Does a bot search and plays the best move on the board
 export function startBotSearch(board) {
   capraStar.postMessage({
     type: "search",
+    fen: board.toFEN(true, true),
+    repetitionHistory: board.repetitionHistory,
+  });
+}
+
+//Does a bot search without playing the move on the board
+export function startBotEvaluation(board) {
+  capraStar.postMessage({
+    type: "evaluate",
     fen: board.toFEN(true, true),
     repetitionHistory: board.repetitionHistory,
   });

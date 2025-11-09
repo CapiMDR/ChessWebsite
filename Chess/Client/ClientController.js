@@ -3,7 +3,7 @@ import { Timer } from "../Shared/Timer.js";
 import { Engine, GameResult } from "../Shared/Engine.js";
 import { playMoveSound, playSound, updateMoveList, lastEvaluation } from "./Renderer.js";
 import { sendToServer, startConnection } from "./ClientNetwork.js";
-import { initializeBot, startBotSearch } from "./BotController.js";
+import { initializeBot, startBotSearch, startBotEvaluation } from "./BotController.js";
 import { white, black } from "../Shared/Constants.js";
 import { Move } from "../Shared/Move.js";
 
@@ -55,13 +55,15 @@ export function onPageLoaded() {
       flipBoard = clientColor == black ? true : false;
       break;
     case "analyze":
-      importGame();
+      initializeBot();
+      importSANGame(window.movesList);
       handleGameStart();
       //Set client color to spectator to stop them from making moves during analysis
       clientColor = "spectator";
       //Stopping both timers in case the game ended by resignation halfway through it
       engine.timers[white].stop();
       engine.timers[black].stop();
+      engine.result = GameResult.Analyzing;
       break;
   }
 }
@@ -98,6 +100,10 @@ export function syncGameWithServer(gameStatus) {
 export function resignGame() {
   if (engine.result != GameResult.inProgress) return;
   sendToServer({ type: "resignation" });
+}
+
+export function getHint() {
+  startBotEvaluation(engine.board);
 }
 
 export function handleGameEnd(result) {
@@ -160,6 +166,7 @@ export function setBotEvaluation(bestMove, evaluation) {
 window.redoMove = function () {
   if (!gameIsOver()) return;
   if (engine.redoHistory.length == 0) return;
+  setBotEvaluation(null, null);
   const moveToRedo = engine.redoHistory[engine.redoHistory.length - 1];
   playMoveSound(moveToRedo);
   engine.redoMove();
@@ -169,6 +176,7 @@ window.redoMove = function () {
 window.undoMove = function () {
   if (!gameIsOver()) return;
   if (engine.moveHistory.length == 0) return;
+  setBotEvaluation(null, null);
   const moveToUndo = engine.moveHistory[engine.moveHistory.length - 1];
   engine.undoMove();
   playMoveSound(moveToUndo);
@@ -179,12 +187,34 @@ function gameIsOver() {
   return engine.result != GameResult.starting && engine.result != GameResult.inProgress;
 }
 
-function importGame() {
-  const movesString = window.movesList;
+//Imports a game written in UCI format (ex e2e4)
+function importUCIGame(movesString) {
   const movePattern = /\b[a-h][1-8][a-h][1-8][qrbn]?\b/g;
   const moveArray = movesString.match(movePattern) || [];
   for (let UCImove of moveArray) {
     const move = Move.UCIToMove(UCImove, engine.board);
+    playMoveLocally(move, false);
+  }
+}
+
+//Imports a game written in SAN format (ex Nf3)
+function importSANGame(movesString) {
+  //Remove move numbers like "1-e4", "2-Nf3", "3..." etc.
+  const sanitized = movesString.replace(/\d+[-.]/g, "");
+
+  //Split by whitespace to get individual SAN moves
+  const sanMoves = sanitized.trim().split(/\s+/);
+
+  for (let sanMove of sanMoves) {
+    //Convert SAN → UCI using your SANToUCI method
+    const uci = Move.SANToUCI(sanMove, engine.board);
+
+    if (!uci) {
+      console.warn("Could not convert SAN move:", sanMove);
+      continue;
+    }
+
+    const move = Move.UCIToMove(uci, engine.board);
     playMoveLocally(move, false);
   }
 }

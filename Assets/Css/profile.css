@@ -84,6 +84,10 @@
   gap: 0.6rem;
 }
 
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.199);
+}
+
 .history-row {
   display: flex;
   justify-content: space-between;
@@ -94,11 +98,6 @@
   display: flex;
   gap: 0.6rem;
   align-items: center;
-}
-
-.history-buttons {
-  display: flex;
-  gap: 10px;
 }
 
 .result-badge {
@@ -128,10 +127,25 @@
 
 .pgn {
   background: rgba(0, 0, 0, 0.3);
-  font-size: 0.8em;
-  padding: 0.6rem;
+  font-size: 0.9em;
   border-radius: 6px;
-  overflow: auto;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  padding: 0 0.6rem;
+  transition: max-height 260ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 200ms ease, transform 200ms ease, padding 200ms ease;
+}
+
+.pgn p {
+  margin: 0.6rem 0;
+}
+
+.pgn.open {
+  max-height: 600px;
+  opacity: 1;
+  transform: translateY(0);
+  padding: 0.6rem;
 }
 
 @media (max-width: 900px) {
