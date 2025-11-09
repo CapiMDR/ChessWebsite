@@ -185,8 +185,8 @@ export class Move {
         const rankConflict = samePieceMoves.some((mv) => BoardUtil.squareToRank(Move.startSqr(mv)) === fromRank);
 
         if (!fileConflict) disambiguation = BoardUtil.fileToChar(fromFile);
-        else if (!rankConflict) disambiguation = (fromRank + 1).toString();
-        else disambiguation = BoardUtil.fileToChar(fromFile) + (fromRank + 1);
+        else if (!rankConflict) disambiguation = (8 - fromRank).toString();
+        else disambiguation = BoardUtil.fileToChar(fromFile) + (8 - fromRank);
       }
     }
 

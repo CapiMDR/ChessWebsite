@@ -91,6 +91,10 @@ io.on("connection", (socket) => {
         matchManager.onMoveReceived(msg.move, msg.matchID);
         break;
       }
+      case "resignation": {
+        matchManager.onResignation(playerID, msg.matchID);
+        break;
+      }
       default:
         console.log(`Invalid message type from client: ${msg.type}`);
         respondToClient(socket, { type: "error", message: "Invalid message type" });
