@@ -51,7 +51,7 @@
     listElement.innerHTML = items
       .map(
         (game) => `
-        <div class="history-item">
+        <div class="history-item" onclick="viewPGN(${game.id})">
           <div class="history-row">
             <div class="history-meta">
               <div class="opp">vs <strong>${game.opponent}</strong></div>
@@ -62,11 +62,10 @@
               ${badgeForResult(game.result)}
             </div>
           </div>
-          <div class="history-buttons">
-            <button class="btn-styled btn-small" type="button" onclick="viewPGN(${game.id})">View</button>
-            <button class="btn-styled btn-small" type="button" onclick="analyzeGame(${game.id})">Analyze</button>
+          <div class="pgn" id="pgn-${game.id}">
+            <p> ${game.pgn} </p>
+            <button class="btn-styled btn-small" type="button" onclick="event.stopPropagation(); analyzeGame(${game.id})">Analyze</button>
           </div>
-          <div class="pgn" id="pgn-${game.id}" style="display:none;">${game.pgn}</div>
         </div>
       `
       )
@@ -77,7 +76,13 @@
   window.viewPGN = function (id) {
     const dropDown = document.getElementById(`pgn-${id}`);
     if (!dropDown) return;
-    dropDown.style.display = dropDown.style.display === "none" ? "block" : "none";
+    //Close other open panels so only one is expanded at a time
+    document.querySelectorAll(".pgn.open").forEach((el) => {
+      if (el.id !== dropDown.id) el.classList.remove("open");
+    });
+
+    //Toggle an "open" class for smooth animation
+    dropDown.classList.toggle("open");
   };
 
   window.analyzeGame = function (id) {

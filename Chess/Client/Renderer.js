@@ -433,7 +433,7 @@ let currentEval = 0;
 
 //Draws CapraStar's evaluation if active
 function drawBotEval() {
-  if (gameMode != "bot") return;
+  if (!(gameMode == "bot" || gameMode == "analyze")) return;
   const bestEvaluation = 2000; //How "great" should the evaluation be to cover the entire bar
   const mateScore = 10000000; //The highest score a bot can give to a move (mate next move)
 
@@ -547,6 +547,7 @@ export function updateMoveList(move) {
     const moveListItem = document.createElement("li");
     movesList.appendChild(moveListItem);
   }
+
   moveListItems[moveListItems.length - 1].textContent += " " + sanMove + " ";
 }
 

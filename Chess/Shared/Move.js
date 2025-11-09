@@ -13,6 +13,10 @@ import {
   black,
   none,
   pawn,
+  knight,
+  bishop,
+  rook,
+  queen,
   king,
   noFlag,
   enPassantFlag,
@@ -218,6 +222,111 @@ export class Move {
     else if (inCheck) san += "+";
 
     return san;
+  }
+
+  static SANToUCI(san, board) {
+    const moveGen = new MoveGenerator();
+    const legalMoves = moveGen.generateMoves(board);
+
+    //Remove check/mate symbols
+    san = san.replace(/[+#]/g, "");
+
+    //Handle castling
+    if (san === "O-O") {
+      return board.clrToMove === white ? "e1g1" : "e8g8";
+    }
+    if (san === "O-O-O") {
+      return board.clrToMove === white ? "e1c1" : "e8c8";
+    }
+
+    //Parse SAN components
+    let pieceLetter = "";
+    let promotion = null;
+
+    //Promotion
+    if (san.includes("=")) {
+      const parts = san.split("=");
+      san = parts[0];
+      promotion = parts[1].toLowerCase(); //q,r,b,n
+    }
+
+    //Piece letter
+    if (/^[NBRQK]/.test(san)) {
+      pieceLetter = san[0];
+      san = san.slice(1);
+    }
+
+    //Remaining san contains something like:
+    // e4
+    // exd5
+    // fxe5
+    // 1e3 or Ne3
+
+    //Extract disambiguation characters
+    //Could be file, rank, or both
+    let disFile = null;
+    let disRank = null;
+
+    if (san.length > 2) {
+      const prefix = san.slice(0, san.length - 2);
+      for (let ch of prefix) {
+        if (/[a-h]/.test(ch)) disFile = BoardUtil.charToFile(ch);
+        if (/[1-8]/.test(ch)) disRank = 8 - parseInt(ch);
+      }
+    }
+
+    const targetName = san.slice(-2); // final square name (ex: e4)
+    const to = BoardUtil.nameToSquare(targetName);
+
+    //Determine piece type
+    const typeMap = { "": pawn, N: knight, B: bishop, R: rook, Q: queen, K: king };
+    const targetPieceType = typeMap[pieceLetter];
+
+    //Find the matching legal move
+    for (let mv of legalMoves) {
+      const from = Move.startSqr(mv);
+      const toSq = Move.targetSqr(mv);
+
+      if (toSq !== to) continue;
+
+      const piece = board.piecesList[from];
+      if (!piece) continue;
+
+      if (Piece.type(piece) !== targetPieceType) continue;
+
+      //Check disambiguation
+      const file = BoardUtil.squareToFile(from);
+      const rank = BoardUtil.squareToRank(from);
+
+      if (disFile !== null && disFile !== file) continue;
+      if (disRank !== null && disRank !== rank) continue;
+
+      //Promo check
+      if (promotion) {
+        let mvPromo;
+        switch (this.flag(mv)) {
+          case promoteKnightFlag:
+            mvPromo = "n";
+            break;
+          case promoteBishopFlag:
+            mvPromo = "b";
+            break;
+          case promoteRookFlag:
+            mvPromo = "r";
+            break;
+          case promoteQueenFlag:
+            mvPromo = "q";
+            break;
+        }
+        if (mvPromo !== promotion) continue;
+      }
+
+      //This is the matching SAN
+      return this.toString(mv);
+    }
+
+    console.error("SANToUCI failed to match move: " + san);
+    return null;
   }
 }
 

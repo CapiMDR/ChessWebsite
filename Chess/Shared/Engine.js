@@ -250,4 +250,5 @@ export const GameResult = Object.freeze({
   fiftyMoveRule: "Draw due to fifty move rule",
   stalemate: "Stalemate",
   drawByRepetition: "Draw by 3 fold repetition",
+  Analyzing: "Analyzing game",
 });
