@@ -51,7 +51,7 @@ export function startConnection() {
 }
 
 export function sendToServer(msgContent) {
-  //Attaching this client's match ID to the message for the server
+  //Attaching this client's match ID to the message for the server so that it can distinguish in which match it originated from
   msgContent.matchID = joinedMatchID;
   socket.emit("message", msgContent);
 }

@@ -27,7 +27,6 @@ body {
   background: rgba(245, 245, 245, 0.1);
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  /* Ensure navigation is above canvas elements */
   position: relative;
   z-index: 2000;
 }
@@ -92,6 +91,16 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.btn-small {
+  padding: 0;
+  border-radius: 5px;
+  width: 5%;
+  height: 120%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-styled:hover {
@@ -321,13 +330,4 @@ body {
   height: 50px;
   animation: spin 1s linear infinite;
   margin: 20px auto;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
 }

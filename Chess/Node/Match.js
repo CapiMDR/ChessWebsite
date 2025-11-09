@@ -12,6 +12,7 @@ export class Match {
 
     this.whiteTimer = new Timer(5, 3);
     this.blackTimer = new Timer(5, 3);
+    this.engine.setTimers(this.whiteTimer, this.blackTimer);
 
     this.colorAssignments = { [white]: null, [black]: null };
     this.originalPlayers = { [white]: null, [black]: null };
@@ -79,8 +80,14 @@ export class Match {
     this.originalPlayers[black] = this.colorAssignments[black];
   }
 
-  endGame() {
+  endGame(resignedPlayer = null) {
     const status = this.getGameStatus();
+    if (resignedPlayer) {
+      const whiteResigned = this.originalPlayers[white] == resignedPlayer;
+      status.gameResult = whiteResigned ? GameResult.whiteResigned : GameResult.blackResigned;
+    }
+    this.engine.timers[white].stop();
+    this.engine.timers[black].stop();
     sendToAllClients({ type: "endGame", matchID: this.ID, gameStatus: status });
     matchManager.removeMatch(this.ID);
 
@@ -127,8 +134,8 @@ export class Match {
     return {
       clrToMove: this.engine.clrToMove,
       movesList: this.engine.moveHistory,
-      whiteTime: this.whiteTimer.remainingTime,
-      blackTime: this.blackTimer.remainingTime,
+      whiteTime: this.engine.timers[white].remainingTime,
+      blackTime: this.engine.timers[black].remainingTime,
       gameResult: this.engine.result,
     };
   }

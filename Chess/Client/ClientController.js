@@ -5,6 +5,7 @@ import { playMoveSound, playSound, updateMoveList, lastEvaluation } from "./Rend
 import { sendToServer, startConnection } from "./ClientNetwork.js";
 import { initializeBot, startBotSearch } from "./BotController.js";
 import { white, black } from "../Shared/Constants.js";
+import { Move } from "../Shared/Move.js";
 
 export const gameMode = window.gameMode;
 
@@ -53,6 +54,15 @@ export function onPageLoaded() {
     case "local":
       flipBoard = clientColor == black ? true : false;
       break;
+    case "analyze":
+      importGame();
+      handleGameStart();
+      //Set client color to spectator to stop them from making moves during analysis
+      clientColor = "spectator";
+      //Stopping both timers in case the game ended by resignation halfway through it
+      engine.timers[white].stop();
+      engine.timers[black].stop();
+      break;
   }
 }
 
@@ -77,10 +87,17 @@ export function handleGameStart() {
 }
 
 export function syncGameWithServer(gameStatus) {
+  console.log(gameStatus.whiteTime);
+  console.log(gameStatus.blackTime);
   engine.clrToMove = gameStatus.clrToMove;
   engine.result = gameStatus.gameResult;
   whiteTimer.remainingTime = gameStatus.whiteTime;
   blackTimer.remainingTime = gameStatus.blackTime;
+}
+
+export function resignGame() {
+  if (engine.result != GameResult.inProgress) return;
+  sendToServer({ type: "resignation" });
 }
 
 export function handleGameEnd(result) {
@@ -160,4 +177,14 @@ window.undoMove = function () {
 
 function gameIsOver() {
   return engine.result != GameResult.starting && engine.result != GameResult.inProgress;
+}
+
+function importGame() {
+  const movesString = window.movesList;
+  const movePattern = /\b[a-h][1-8][a-h][1-8][qrbn]?\b/g;
+  const moveArray = movesString.match(movePattern) || [];
+  for (let UCImove of moveArray) {
+    const move = Move.UCIToMove(UCImove, engine.board);
+    playMoveLocally(move, false);
+  }
 }

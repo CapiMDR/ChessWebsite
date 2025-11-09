@@ -81,6 +81,11 @@ class MatchManager {
     if (!match.gameHasStarted()) this.removePlayerFromMatch(playerID);
   }
 
+  onResignation(playerID, matchID) {
+    const match = this.getMatch(matchID);
+    match.endGame(playerID);
+  }
+
   createMatch() {
     const id = crypto.randomUUID();
     const match = new Match(id);

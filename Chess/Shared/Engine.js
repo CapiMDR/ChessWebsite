@@ -241,6 +241,8 @@ export const GameResult = Object.freeze({
   starting: "Starting the game",
   inProgress: "In Progress",
   whiteCheckmated: "White Checkmated",
+  whiteResigned: "White resigned",
+  blackResigned: "Black resigned",
   blackCheckmated: "Black Checkmated",
   whiteTimeOut: "White ran out of time",
   blackTimeOut: "Black ran out of time",
