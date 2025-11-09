@@ -30,6 +30,7 @@ let bQ_Icon;
 let bK_Icon;
 
 let check_Glow;
+let wood_Img;
 
 let capture_Sound;
 let move_Sound;
@@ -64,6 +65,7 @@ window.preload = function () {
   start_Sound = loadSound(`${soundUrl}/start.mp3`);
 
   check_Glow = loadImage(`../../Assets/Images/Glow.png`);
+  wood_Img = loadImage(`../../Assets/Images/BoardBg.jpg`);
 };
 
 window.setup = function () {
@@ -128,6 +130,11 @@ function drawBoard() {
       }
     }
   }
+
+  imageMode(CORNER);
+  tint(255, 60);
+  image(wood_Img, 0, 0, boardSize, boardSize);
+  tint(255);
 }
 
 function drawPieces(engine) {
@@ -201,6 +208,7 @@ function drawCapturedPieces(engine) {
 function drawLegalMoves(engine, clr = color(0)) {
   //Only draw legal moves if it's this client's turn
   if ((gameMode == "online" || gameMode == "bot") && clientColor != engine.clrToMove) return;
+  if (engine.result != GameResult.inProgress) return;
   if (engine.isUndoingMoves()) return;
 
   for (let move of engine.moves) {

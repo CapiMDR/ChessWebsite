@@ -36,14 +36,7 @@ export class Engine {
 
   setTimers(whiteTimer, blackTimer) {
     this.timers[white] = whiteTimer;
-    if (whiteTimer != undefined) whiteTimer.engineOwner = this;
     this.timers[black] = blackTimer;
-    if (blackTimer != undefined) blackTimer.engineOwner = this;
-  }
-
-  //Handles game over by timer running out
-  handleTimeOut() {
-    if (this.timers[this.clrToMove] != undefined && this.timers[this.clrToMove].remainingTime <= 0) this.result = this.getTimeOutResult();
   }
 
   startGame() {
@@ -135,10 +128,6 @@ export class Engine {
 
   getCheckmateResult() {
     return this.clrToMove == white ? GameResult.blackCheckmated : GameResult.whiteCheckmated;
-  }
-
-  getTimeOutResult() {
-    return this.clrToMove == white ? GameResult.whiteTimeOut : GameResult.blackTimeOut;
   }
 
   isThreefoldRepetition() {

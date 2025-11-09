@@ -1,11 +1,18 @@
 //Handles communication with the server.js
-import { receiveColorFromServer, handleGameStart, handleGameEnd, playMoveLocally, playAllServerMoves, syncGameWithServer } from './ClientController.js';
+import {
+  receiveColorFromServer,
+  handleGameStart,
+  handleGameEnd,
+  playMoveLocally,
+  playAllServerMoves,
+  syncGameWithServer,
+} from "./ClientController.js";
 
 export const host = window.location.hostname; //Current host ip
 export const port = 3000; //Node server port
 let socket;
 
-export function startConnection(){
+export function startConnection() {
   //Generate or retrieve unique player ID
   let playerId = localStorage.getItem("playerId");
   if (!playerId) {
@@ -17,27 +24,31 @@ export function startConnection(){
   socket = io(`https://${host}:${port}`, { query: { playerId } });
 
   //Message handler for messages received from server
-  socket.on('message',(msg) => {
-      switch(msg.type){
-          case 'color': receiveColorFromServer(msg.color);
-          break;
-          case 'startGame': handleGameStart();
-          break;
-          case 'endGame': handleGameEnd();
-          break;   
-          case 'move': 
-            playMoveLocally(msg.move);
-            syncGameWithServer(msg.gameStatus);
-          break;
-          case 'syncGame': 
-            playAllServerMoves(msg.gameStatus);
-            syncGameWithServer(msg.gameStatus);
-          break;
-          default: console.log("Invalid message type from server"); 
-      }   
+  socket.on("message", (msg) => {
+    switch (msg.type) {
+      case "color":
+        receiveColorFromServer(msg.color);
+        break;
+      case "startGame":
+        handleGameStart();
+        break;
+      case "endGame":
+        handleGameEnd(msg.gameStatus.gameResult);
+        break;
+      case "move":
+        playMoveLocally(msg.move);
+        syncGameWithServer(msg.gameStatus);
+        break;
+      case "syncGame":
+        playAllServerMoves(msg.gameStatus);
+        syncGameWithServer(msg.gameStatus);
+        break;
+      default:
+        console.log("Invalid message type from server");
+    }
   });
 }
 
-export function sendToServer(msgContent){
-  socket.emit('message', msgContent);
+export function sendToServer(msgContent) {
+  socket.emit("message", msgContent);
 }

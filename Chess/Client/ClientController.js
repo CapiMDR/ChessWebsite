@@ -27,6 +27,17 @@ whiteTimer = new Timer(whiteMinutes, whiteIncrementSeconds);
 blackTimer = new Timer(blackMinutes, blackIncrementSeconds);
 engine.setTimers(whiteTimer, blackTimer);
 
+//Listening to timer events
+whiteTimer.addEventListener("timeout", () => handleLocalTimeout(white));
+blackTimer.addEventListener("timeout", () => handleLocalTimeout(black));
+
+function handleLocalTimeout(color) {
+  //Ignore local time outs if playing online (wait for server to notify game over)
+  if (gameMode == "online") return;
+  const result = color === white ? GameResult.whiteTimeOut : GameResult.blackTimeOut;
+  handleGameEnd(result);
+}
+
 export function onPageLoaded() {
   switch (gameMode) {
     case "online":
@@ -70,12 +81,16 @@ export function syncGameWithServer(gameStatus) {
   blackTimer.remainingTime = gameStatus.blackTime;
 }
 
-export function handleGameEnd() {
+export function handleGameEnd(result) {
+  engine.result = result;
+  engine.timers[white].stop();
+  engine.timers[black].stop();
   playSound("End");
 }
 
 //Registers a move played locally. If multiplayer, sends it to the server for validation, otherwise just plays it immediately
 export function registerMove(playedMove) {
+  if (engine.result != GameResult.inProgress) return;
   //Don't register any move locally if undoing moves
   if (engine.isUndoingMoves()) return;
 
@@ -100,6 +115,8 @@ export function registerMove(playedMove) {
 
 //Any move received is played on the local board
 export function playMoveLocally(move, shouldPlaySounds = true) {
+  if (gameIsOver()) return;
+
   //TODO: Allow for move undoing/redoing during the game and resynching the board when a new move arrives
   if (shouldPlaySounds) playMoveSound(move);
   updateMoveList(move);
@@ -109,6 +126,10 @@ export function playMoveLocally(move, shouldPlaySounds = true) {
   if (gameMode == "local") {
     flipBoard = engine.clrToMove == black ? true : false;
   }
+
+  //Handle local game end (only when not playing online as that should stay server-authoritative)
+  if (gameMode == "online") return;
+  if (gameIsOver()) handleGameEnd(engine.result);
 }
 
 export function setBotEvaluation(bestMove, evaluation) {
@@ -118,7 +139,7 @@ export function setBotEvaluation(bestMove, evaluation) {
 }
 
 window.redoMove = function () {
-  if (engine.result == GameResult.inProgress) return;
+  if (!gameIsOver()) return;
   if (engine.redoHistory.length == 0) return;
   const moveToRedo = engine.redoHistory[engine.redoHistory.length - 1];
   playMoveSound(moveToRedo);
@@ -127,10 +148,14 @@ window.redoMove = function () {
 };
 
 window.undoMove = function () {
-  if (engine.result == GameResult.inProgress) return;
+  if (!gameIsOver()) return;
   if (engine.moveHistory.length == 0) return;
   const moveToUndo = engine.moveHistory[engine.moveHistory.length - 1];
   engine.undoMove();
   playMoveSound(moveToUndo);
   if (engine.inCheck) playSound("Check");
 };
+
+function gameIsOver() {
+  return engine.result != GameResult.starting && engine.result != GameResult.inProgress;
+}
