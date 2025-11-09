@@ -1,17 +1,17 @@
 //Handles communication with the server.js
 import {
-  receiveColorFromServer,
+  joinServerGame,
   handleGameStart,
   handleGameEnd,
   playMoveLocally,
   playAllServerMoves,
   syncGameWithServer,
+  joinedMatchID,
 } from "./ClientController.js";
 
 export const host = window.location.hostname; //Current host ip
 export const port = 3000; //Node server port
 let socket;
-let joinedMatchID;
 
 export function startConnection() {
   //Generate or retrieve unique player ID
@@ -27,8 +27,8 @@ export function startConnection() {
   //Message handler for messages received from server
   socket.on("message", (msg) => {
     switch (msg.type) {
-      case "color":
-        receiveColorFromServer(msg.color);
+      case "joinMatch":
+        joinServerGame(msg.matchID, msg.color);
         break;
       case "startGame":
         handleGameStart();
@@ -44,9 +44,6 @@ export function startConnection() {
         playAllServerMoves(msg.gameStatus);
         syncGameWithServer(msg.gameStatus);
         break;
-      case "joinMatch":
-        joinedMatchID = msg.matchID;
-        break;
       default:
         console.log("Invalid message type from server");
     }
@@ -54,6 +51,7 @@ export function startConnection() {
 }
 
 export function sendToServer(msgContent) {
+  //Attaching this client's match ID to the message for the server
   msgContent.matchID = joinedMatchID;
   socket.emit("message", msgContent);
 }

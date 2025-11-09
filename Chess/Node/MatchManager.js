@@ -9,18 +9,28 @@ class MatchManager {
 
   onPlayerReady(socket, playerID, matchID) {
     let match;
-
-    //Check if this player was already in a match (reconnect case)
-    const previousMatch = this.findMatchByPlayer(playerID);
-    if (previousMatch) {
-      console.log(`Player ${playerID} reconnected to match ${previousMatch.ID}`);
-      socket.join(previousMatch.ID);
-      previousMatch.handlePlayerReady(socket, playerID);
-      respondToClient(socket, { type: "joinMatch", matchID: previousMatch.ID });
-      return; //Stop here, player successfully rejoined
+    if (this.isReconnecting(playerID)) {
+      //If this client is reconnecting to an existing match
+      match = this.findMatchByPlayer(playerID);
+      console.log(`Player ${playerID} reconnected to match ${match.ID}`);
+    } else {
+      //Player is not reconnecting (no known match or old match has been deleted)
+      match = this.findNewMatch(socket, playerID, matchID);
     }
 
-    //Player is not reconnecting (no known match or old match gone)
+    if (match == null) return;
+
+    console.log(`Player ${playerID} joining match ${match.ID}`);
+    //Assign player to the match room
+    socket.join(match.ID);
+    //Let the match handle readiness / color assignment / start
+    match.handlePlayerReady(socket, playerID);
+    //Record mapping of the player to their match
+    this.assignPlayerToMatch(playerID, match.ID);
+  }
+
+  findNewMatch(socket, playerID, matchID) {
+    let match;
     if (!matchID) {
       //Try to find a match that hasn't started and isn't full
       match = this.findOpenMatch();
@@ -36,22 +46,19 @@ class MatchManager {
       if (!match) {
         console.log(`Player ${playerID} tried to join non-existent match ${matchID}`);
         respondToClient(socket, { type: "error", message: "Invalid match ID" });
-        return;
+        return null;
       }
     }
-
-    console.log(`Player ${playerID} joining match ${match.ID}`);
-    //Assign player to the match room
-    socket.join(match.ID);
-    //Tell client which match they joined
-    respondToClient(socket, { type: "joinMatch", matchID: match.ID });
-    //Let the match handle readiness / color assignment / start
-    match.handlePlayerReady(socket, playerID);
-    //Record mapping of the player to their match
-    this.assignPlayerToMatch(playerID, match.ID);
+    return match;
   }
 
-  onMoveReceived(matchID, move) {
+  isReconnecting(playerID) {
+    //Check if this player was already in a match (reconnect case)
+    const previousMatch = this.findMatchByPlayer(playerID);
+    return previousMatch != null;
+  }
+
+  onMoveReceived(move, matchID) {
     if (!matchID || !move) {
       console.log("Move message missing matchID or move");
       return;
@@ -68,7 +75,8 @@ class MatchManager {
 
   onPlayerDisconnect(playerID) {
     const match = this.findMatchByPlayer(playerID);
-    if (match) match.handleDisconnect(playerID);
+    if (!match) return;
+    match.handleDisconnect(playerID);
     //If the game hasn't started "forget" that this client ever joined this match, otherwise remember for rejoining
     if (!match.gameHasStarted()) this.removePlayerFromMatch(playerID);
   }
@@ -106,11 +114,12 @@ class MatchManager {
     this.playerToMatch.delete(playerId);
   }
 
-  removeMatch(id) {
-    this.matches.delete(id);
-    //Clean up player mapping
+  removeMatch(matchID) {
+    //Deleting from matches map
+    this.matches.delete(matchID);
+    //Cleaning up player mapping
     for (const [playerId, gid] of this.playerToMatch.entries()) {
-      if (gid === id) this.playerToMatch.delete(playerId);
+      if (gid === matchID) this.playerToMatch.delete(playerId);
     }
   }
 }

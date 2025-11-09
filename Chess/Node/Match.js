@@ -3,6 +3,7 @@ import { Timer } from "../Shared/Timer.js";
 import { Move } from "../Shared/Move.js";
 import { white, black } from "../Shared/Constants.js";
 import { sendToAllClients, respondToClient } from "./server.js";
+import { matchManager } from "./MatchManager.js";
 
 export class Match {
   constructor(id, startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
@@ -45,7 +46,8 @@ export class Match {
 
   handlePlayerReady(socket, playerId) {
     const assignedColor = this.assignColor(playerId);
-    respondToClient(socket, { type: "color", color: assignedColor });
+    //Tell client which match they joined and as which color
+    respondToClient(socket, { type: "joinMatch", matchID: this.ID, color: assignedColor });
 
     //Sync joining player's game to server's game if a reconnect
     if (this.gameHasStarted()) {
@@ -80,8 +82,9 @@ export class Match {
   endGame() {
     const status = this.getGameStatus();
     sendToAllClients({ type: "endGame", matchID: this.ID, gameStatus: status });
+    matchManager.removeMatch(this.ID);
+
     //TODO: Save game on database
-    //TODO: Remove game from match manager
   }
 
   handleReceivedMove(move) {
