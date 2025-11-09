@@ -9,16 +9,28 @@ const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 let engine;
 
 let whiteTimer;
-const whiteTime = 5; //Initial time in minutes
+const whiteTime = 0.05; //Initial time in minutes
 const whiteIncrement = 3; //In seconds
 let blackTimer;
-const blackTime = 5;
+const blackTime = 0.05;
 const blackIncrement = 3;
 
 engine = new Engine(startFEN);
 whiteTimer = new Timer(whiteTime, whiteIncrement);
 blackTimer = new Timer(blackTime, blackIncrement);
 engine.setTimers(whiteTimer, blackTimer);
+
+//Listening to timer events
+whiteTimer.addEventListener("timeout", () => handleServerTimeout(white));
+blackTimer.addEventListener("timeout", () => handleServerTimeout(black));
+
+//Notify all clients that the game is over
+function handleServerTimeout(color) {
+  if (gameIsOver()) return;
+
+  engine.result = color === white ? GameResult.whiteTimeOut : GameResult.blackTimeOut;
+  endGame();
+}
 
 //Map of playerId to their assigned color
 let colorAssignments = { [white]: null, [black]: null };
@@ -87,13 +99,20 @@ export function startGame() {
   originalPlayers[black] = colorAssignments[black];
 }
 
+function endGame() {
+  const gameStatus = getGameStatus();
+  sendToAllClients({ type: "endGame", gameStatus });
+
+  //TODO: Store game in database
+}
+
 export function handleReceivedMove(move) {
   //If the server receives a move from a client, validate it and resend it to everyone
   if (!isLegalMove(move)) return;
   const gameStatus = getGameStatus();
   sendToAllClients({ type: "move", move: move, gameStatus: gameStatus });
   //If the game is over after the move, notify clients
-  if (gameIsOver()) sendToAllClients({ type: "endGame" });
+  if (gameIsOver()) endGame();
 }
 
 export function isLegalMove(clientMove) {
@@ -120,7 +139,7 @@ export function gameHasStarted() {
 }
 
 export function gameIsOver() {
-  return engine.result != GameResult.inProgress;
+  return engine.result != GameResult.starting && engine.result != GameResult.inProgress;
 }
 
 //Returns game status on server to sync players on disconnect/reconnect and whenever the server receives a move
