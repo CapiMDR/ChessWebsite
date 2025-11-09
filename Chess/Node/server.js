@@ -61,7 +61,6 @@ app.use("/shared", express.static(path.join(__dirname, "../Shared")));
 app.use(express.static(path.join(__dirname, "../Chess")));
 
 let onlineUsers = 0;
-//Track which game each player is currently in
 
 //Socket actions
 io.on("connection", (socket) => {
@@ -77,78 +76,21 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     onlineUsers--;
     console.log(`Player ${playerID} disconnected (socket: ${socket.id}). Online: ${onlineUsers}`);
-
-    const match = matchManager.findMatchByPlayer(playerID);
-    if (match) match.handleDisconnect(playerID);
-    //If the game hasn't started "forget" that this client ever joined this match, otherwise remember for rejoining
-    if (!match.gameHasStarted()) matchManager.removePlayerFromMatch(playerID);
+    matchManager.onPlayerDisconnect(playerID);
   });
 
   socket.on("message", (msg) => {
     switch (msg.type) {
       //Player signals readiness, join or create a new match
       case "ready": {
-        let match;
-
-        //Check if this player was already in a match (reconnect case)
-        const previousMatch = matchManager.findMatchByPlayer(playerID);
-        if (previousMatch) {
-          console.log(`Player ${playerID} reconnected to match ${previousMatch.ID}`);
-          socket.join(previousMatch.ID);
-          previousMatch.handlePlayerReady(socket, playerID);
-          respondToClient(socket, { type: "joinMatch", matchID: previousMatch.ID });
-          break; //Stop here, player successfully rejoined
-        }
-
-        //Player is not reconnecting (no known match or old match gone)
-        if (!msg.matchID) {
-          //Try to find a match that hasn't started and isn't full
-          match = matchManager.findOpenMatch();
-
-          //No open match found, create a new one
-          if (!match) {
-            console.log("No empty matches found, creating a new one");
-            match = matchManager.createMatch();
-          }
-        } else {
-          //Player provided a specific match ID, try to join it
-          match = matchManager.getMatch(msg.matchID);
-          if (!match) {
-            console.log(`Player ${playerID} tried to join non-existent match ${msg.matchID}`);
-            respondToClient(socket, { type: "error", message: "Invalid match ID" });
-            return;
-          }
-        }
-
-        console.log(`Player ${playerID} joining match ${match.ID}`);
-        //Assign player to the match room
-        socket.join(match.ID);
-        //Tell client which match they joined
-        respondToClient(socket, { type: "joinMatch", matchID: match.ID });
-        //Let the match handle readiness / color assignment / start
-        match.handlePlayerReady(socket, playerID);
-        //Record mapping of the player to their match
-        matchManager.assignPlayerToMatch(playerID, match.ID);
+        matchManager.onPlayerReady(socket, playerID, msg.matchID);
         break;
       }
-
       //Player makes a move, validate legality and broadcast to all other clients on that room
       case "move": {
-        if (!msg.matchID || !msg.move) {
-          console.log("Move message missing matchID or move");
-          return;
-        }
-
-        const match = matchManager.getMatch(msg.matchID);
-        if (!match) {
-          console.log(`Move for non-existent match ${msg.matchID}`);
-          return;
-        }
-
-        match.handleReceivedMove(msg.move);
+        matchManager.onMoveReceived(msg.matchID, msg.move);
         break;
       }
-
       default:
         console.log(`Invalid message type from client: ${msg.type}`);
         respondToClient(socket, { type: "error", message: "Invalid message type" });
