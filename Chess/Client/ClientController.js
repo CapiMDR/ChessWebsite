@@ -21,6 +21,7 @@ export let engine = new Engine(startFEN); //Starting position, white timer, blac
 export let clientColor; //Color assigned to this client by the server
 clientColor = white; //TEMPORARY DEFAULT ASSIGNMENT TO WHITE FOR PLAYING AGAINST THE BOT UNTIL USER SELECTION IS ALLOWED BEFORE GAME START
 export let flipBoard; //Controls whether the board should be drawn in black's perspective
+export let joinedMatchID; //The current match ID assigned to this client by the server
 
 //Minutes & increment in seconds
 whiteTimer = new Timer(whiteMinutes, whiteIncrementSeconds);
@@ -63,9 +64,10 @@ export function playAllServerMoves(gameStatus) {
 }
 
 //Rerceives assigned color from server
-export function receiveColorFromServer(color) {
+export function joinServerGame(matchID, color) {
   clientColor = color;
   flipBoard = clientColor == black ? true : false;
+  joinedMatchID = matchID;
 }
 
 export function handleGameStart() {

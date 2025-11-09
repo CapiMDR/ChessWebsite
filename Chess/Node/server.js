@@ -66,7 +66,7 @@ let onlineUsers = 0;
 io.on("connection", (socket) => {
   const playerID = socket.handshake.query.playerId;
   if (!playerID) {
-    console.warn(`Connection without playerId rejected`);
+    console.log(`Connection without playerId rejected`);
     socket.disconnect();
     return;
   }
@@ -88,7 +88,7 @@ io.on("connection", (socket) => {
       }
       //Player makes a move, validate legality and broadcast to all other clients on that room
       case "move": {
-        matchManager.onMoveReceived(msg.matchID, msg.move);
+        matchManager.onMoveReceived(msg.move, msg.matchID);
         break;
       }
       default:
