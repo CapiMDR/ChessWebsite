@@ -1,24 +1,25 @@
 <?php
-    session_start();
-?>
+session_start();
+require_once("db_connect.php");
 
-<?php
-//Fetching user input from login.php
 $user = isset($_POST['user']) ? $_POST['user'] : "";
 $password = isset($_POST['password']) ? $_POST['password'] : "";
 
-$savedUser="Bob";
-$savedPassword="Marley";
+//limpiamos
+$user = mysqli_real_escape_string($conn, $user);
+$password = mysqli_real_escape_string($conn, $password);
 
-if(isValidAccount($user, $password)){
+
+$searchUser_sql = "SELECT username FROM users WHERE username='$user' AND password='$password'";
+$result = $conn->query($searchUser_sql);
+
+//checamos si se encontró alguna fila
+if ($result && $result->num_rows>0){
     $_SESSION['user'] = $user;
     echo "valid";
-}else{
+} else {
     echo "invalid";
 }
 
-function isValidAccount($user, $password){
-    global $savedUser;
-    global $savedPassword;
-    return $user == $savedUser && $password == $savedPassword;
-}
+$conn->close();
+?>
