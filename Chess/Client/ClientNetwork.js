@@ -1,17 +1,11 @@
-//Handles communication with the server.js
-import {
-  joinServerGame,
-  handleGameStart,
-  handleGameEnd,
-  playMoveLocally,
-  playAllServerMoves,
-  syncGameWithServer,
-  joinedMatchID,
-} from "./ClientController.js";
+/*
+ * Handles communication with the server.js
+ */
 
 export const host = window.location.hostname; //Current host ip
 export const port = 3000; //Node server port
 let socket;
+let joinedMatchID; //The current match ID assigned to this client by the server
 
 export function startConnection() {
   //Generate or retrieve unique player ID
@@ -26,32 +20,15 @@ export function startConnection() {
 
   //Message handler for messages received from server
   socket.on("message", (msg) => {
-    switch (msg.type) {
-      case "joinMatch":
-        joinServerGame(msg.matchID, msg.color);
-        break;
-      case "startGame":
-        handleGameStart();
-        break;
-      case "endGame":
-        handleGameEnd(msg.gameStatus.gameResult);
-        break;
-      case "move":
-        playMoveLocally(msg.move);
-        syncGameWithServer(msg.gameStatus);
-        break;
-      case "syncGame":
-        playAllServerMoves(msg.gameStatus);
-        syncGameWithServer(msg.gameStatus);
-        break;
-      default:
-        console.log("Invalid message type from server");
-    }
+    if (msg.type == "joinMatch") joinedMatchID = msg.matchID;
+    serverEvents.dispatchEvent(new CustomEvent(msg.type, { detail: msg }));
   });
 }
 
 export function sendToServer(msgContent) {
-  //Attaching this client's match ID to the message for the server so that it can distinguish in which match it originated from
+  //Attaching this client's match ID to the message for the server so that it can distinguish from which match it originated from
   msgContent.matchID = joinedMatchID;
   socket.emit("message", msgContent);
 }
+
+export const serverEvents = new EventTarget();
