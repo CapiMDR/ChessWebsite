@@ -6,7 +6,7 @@
 <html lang="en">
   <?php
     if (!isset($_SESSION['user'])){
-        header('Location: ../../Landing/login.php');
+        header('Location: ../../Landing/Login/login.php');
         exit();
     }
 
