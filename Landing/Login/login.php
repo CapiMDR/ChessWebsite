@@ -34,14 +34,14 @@ if (isset($_SESSION['user'])){
               <span class="material-icons">person</span>
               Username
             </label>
-            <input type="text" class="styledTextField" id="user" name="user" required>
+            <input type="text" class="styledTextField" id="user" name="user" autocomplete="username" required>
           </div>
           <div class="form-group">
             <label for="password">
               <span class="material-icons">lock</span>
               Password
             </label>
-            <input type="password" class="styledTextField" id="password" name="password" required>
+            <input type="password" class="styledTextField" id="password" name="password" autocomplete="current-password" required>
           </div>
           <button type="submit" class="btn-styled-red login-btn">
             <span class="material-icons">login</span>
