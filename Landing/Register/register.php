@@ -27,21 +27,21 @@
                             <span class="material-icons">person</span>
                             Username
                         </label>
-                        <input type="text" class="styledTextField" id="username" name="username" required>
+                        <input type="text" class="styledTextField" id="username" name="username" autocomplete="username" required>
                     </div>
                     <div class="form-group">
                         <label for="email">
                             <span class="material-icons">email</span>
                             Email
                         </label>
-                        <input type="email" class="styledTextField" id="email" name="email" required>
+                        <input type="email" class="styledTextField" id="email" name="email" autocomplete="username" required>
                     </div>
                     <div class="form-group">
                         <label for="password">
                             <span class="material-icons">lock</span>
                             Password
                         </label>
-                        <input type="password" class="styledTextField" id="password" name="password" required>
+                        <input type="password" class="styledTextField" id="password" name="password" autocomplete="new-password" required>
                     </div>
                     <button type="submit" class="btn-styled-red login-btn">
                         <span class="material-icons">person_add</span>

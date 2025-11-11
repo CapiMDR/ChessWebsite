@@ -3,10 +3,12 @@ import { BBUtil } from "../Shared/BBUtil.js";
 import { Piece } from "../Shared/Piece.js";
 import { Move } from "../Shared/Move.js";
 import { BoardUtil } from "../Shared/BoardUtil.js";
-import { white, black, none, pawn, knight, bishop, rook, queen, king, enPassantFlag, castleFlag } from "../Shared/Constants.js";
+import { white, black, pawn, knight, bishop, rook, queen, king, enPassantFlag } from "../Shared/Constants.js";
 import { selectedSquare, dragging } from "./Input.js";
 import { GameResult } from "../Shared/Engine.js";
-import { engine, clientColor, flipBoard, onPageLoaded, gameMode } from "./ClientController.js";
+import { clientColor, flipBoard, onPageLoaded } from "./ClientController.js";
+import { gameController, engine } from "./GameController.js";
+import { botEvents } from "./BotController.js";
 
 const windowHeight = window.innerHeight;
 export const boardSize = windowHeight * 0.9 * 0.8;
@@ -32,12 +34,12 @@ let bK_Icon;
 let check_Glow;
 let wood_Img;
 
-let capture_Sound;
-let move_Sound;
-let check_Sound;
+export let capture_Sound;
+export let move_Sound;
+export let check_Sound;
 export let gameOver_Sound;
 export let start_Sound;
-let castle_Sound;
+export let castle_Sound;
 
 window.preload = function () {
   const piecesUrl = `../../Assets/Images/merida`;
@@ -207,7 +209,7 @@ function drawCapturedPieces(engine) {
 
 function drawLegalMoves(engine, clr = color(0)) {
   //Only draw legal moves if it's this client's turn
-  if ((gameMode == "online" || gameMode == "bot") && clientColor != engine.clrToMove) return;
+  if ((gameController.gameMode == "online" || gameController.gameMode == "bot") && clientColor != engine.clrToMove) return;
   if (engine.result != GameResult.inProgress) return;
   if (engine.isUndoingMoves()) return;
 
@@ -415,15 +417,26 @@ function drawArrow(fromSq, toSq, clr = color(0), thickness) {
   pop();
 }
 
-export const lastEvaluation = {
+botEvents.addEventListener("botEvaluation", (e) => {
+  updateBotEvaluation(e.detail);
+});
+
+let botEvaluation = {
   bestMove: null,
   evaluation: 0,
   pv: null,
 };
 
+function updateBotEvaluation(botResult) {
+  botEvaluation.bestMove = botResult.bestMove;
+  //The bot always returns a positive score when it is winning, so multiply by -1 when it is playing black for standard visualization
+  botEvaluation.evaluation = engine.clrToMove == white ? -botResult.evaluation : botResult.evaluation;
+  botEvaluation.pv = botResult.pv;
+}
+
 //Draws arrows to represent the principal variation (best moves for either side to a static depth) after CapraStar evaluation
 function drawBotAnalysis() {
-  const pv = lastEvaluation.pv;
+  const pv = botEvaluation.pv;
   if (!pv) return;
 
   let baseColorStart = color("#da2358");
@@ -448,7 +461,7 @@ function drawBotAnalysis() {
     fill(255);
     noStroke();
     textSize(18);
-    text(i + 1, squareSize * targetFile + 10, squareSize * targetRank + squareSize * 0.25);
+    text(i + 1, squareSize * (targetFile + 1) - 20, squareSize * targetRank + squareSize * 0.25);
   }
 }
 
@@ -456,11 +469,12 @@ let currentEval = 0;
 
 //Draws CapraStar's evaluation if active
 function drawBotEval() {
-  if (!(gameMode == "bot" || gameMode == "analyze")) return;
+  if (!(gameController.gameMode == "bot" || gameController.gameMode == "analyze")) return;
   const bestEvaluation = 2000; //How "great" should the evaluation be to cover the entire bar
   const mateScore = 10000000; //The highest score a bot can give to a move (mate next move)
 
-  const lastEval = lastEvaluation.evaluation;
+  let lastEval = botEvaluation.evaluation;
+
   //If it's a mate score, skip interpolation so the bar jumps instantly
   if (Math.abs(lastEval) > mateScore - 1000) {
     currentEval = lastEval;
@@ -494,40 +508,6 @@ function drawBotEval() {
   }
 }
 
-export function playSound(type) {
-  switch (type) {
-    case "Start":
-      start_Sound.play();
-      break;
-    case "End":
-      gameOver_Sound.play();
-      break;
-    case "Check":
-      check_Sound.play();
-      break;
-  }
-}
-
-//Notes: Move must not have been played already to play the right sound. This function does not play check sounds
-export function playMoveSound(move) {
-  const flag = Move.flag(move);
-  const targetSquare = Move.targetSqr(move);
-  const capturedPiece = engine.board.piecesList[targetSquare];
-  const capturedPieceType = Piece.type(capturedPiece);
-
-  if (flag == castleFlag) {
-    castle_Sound.play();
-    return;
-  }
-
-  if (capturedPieceType != none || flag == enPassantFlag) {
-    capture_Sound.play();
-    return;
-  }
-
-  move_Sound.play();
-}
-
 //Adjust file and rank when the board is rotated visually
 function adjustFile(file) {
   return flipBoard ? 7 - file : file;
@@ -558,20 +538,6 @@ function unsetEffects() {
   drawingContext.shadowOffsetX = 0;
   drawingContext.shadowOffsetY = 0;
   drawingContext.shadowColor = 0;
-}
-
-export function updateMoveList(move) {
-  //Update moves list UI to show the SAN notation of all moves
-  const movesList = document.getElementById("movesList");
-  const moveListItems = movesList.getElementsByTagName("li");
-  const uciMove = Move.toString(move);
-  const sanMove = Move.UCIToSAN(uciMove, engine.board);
-  if (engine.moveHistory.length % 2 == 0) {
-    const moveListItem = document.createElement("li");
-    movesList.appendChild(moveListItem);
-  }
-
-  moveListItems[moveListItems.length - 1].textContent += " " + sanMove + " ";
 }
 
 /*Debug functions*/

@@ -1,10 +1,11 @@
 //Handles all user input methods (clicking/dragging pieces)
 import { squareSize, promotionMenu, boardSize } from "./Renderer.js";
-import { engine, registerMove, flipBoard } from "./ClientController.js";
 import { Move } from "../Shared/Move.js";
 import { BoardUtil } from "../Shared/BoardUtil.js";
 import { GameResult } from "../Shared/Engine.js";
 import { knight, bishop, rook, queen, promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag } from "../Shared/Constants.js";
+import { registerMove, flipBoard } from "./ClientController.js";
+import { engine } from "./GameController.js";
 
 export let selectedSquare;
 export let selectToggle = true;

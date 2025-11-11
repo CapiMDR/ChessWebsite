@@ -31,27 +31,7 @@
         window.movesList = <?php echo json_encode($_POST['pgn']); ?>;
       <?php endif; ?>
     </script>
-    <script type="module">
-      import { handleGameStart, resignGame, getHint } from './ClientController.js';
-
-      //Adding a listener to the play button to handle game start on press
-      document.addEventListener("DOMContentLoaded", () => {
-        const playBtn = document.getElementById("playBTN");
-        if (playBtn) {
-          playBtn.addEventListener("click", handleGameStart);
-        }
-
-        const resignBtn = document.getElementById("resignBTN");
-        if (resignBtn) {
-          resignBtn.addEventListener("click", resignGame);
-        }
-
-        const hintBtn = document.getElementById("hintBTN");
-        if (hintBtn) {
-          hintBtn.addEventListener("click", getHint);
-        }
-      });
-    </script>
+    <script type="module" src="./UIController.js"></script>
   </head>
   <body>
     <?php include('../../Components/backgroundArt.html'); ?>
