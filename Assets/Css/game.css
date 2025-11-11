@@ -19,7 +19,7 @@ canvas {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 10;
-  border-radius: 1%;
+  border-radius: 1% 0% 0% 1%;
 }
 
 #gameRow {
@@ -72,6 +72,23 @@ canvas {
   content: counter(move) ". ";
   color: #aaa;
   margin-right: 0.3rem;
+}
+
+@keyframes glowing {
+  0% {
+    box-shadow: 0 0 5px #0b5b99, 0 0 10px #da2358, 0 0 15px #ff7fb2;
+  }
+  50% {
+    box-shadow: 0 0 10px rgb(255, 85, 150), 0 0 20px #da2358, 0 0 25px #ffa2c6;
+  }
+  100% {
+    box-shadow: 0 0 5px #0b5b99, 0 0 10px #da2358, 0 0 15px #ff7fb2;
+  }
+}
+
+.btn-glowing {
+  animation: glowing 1.5s ease-in-out infinite;
+  background: rgba(245, 245, 245, 0.15);
 }
 
 #moveBTNS {

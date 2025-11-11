@@ -3,7 +3,7 @@ import { Timer } from "../Shared/Timer.js";
 import { Engine, GameResult } from "../Shared/Engine.js";
 import { playMoveSound, playSound, updateMoveList, lastEvaluation } from "./Renderer.js";
 import { sendToServer, startConnection } from "./ClientNetwork.js";
-import { initializeBot, startBotSearch, startBotEvaluation } from "./BotController.js";
+import { initializeBot, startBotSearch } from "./BotController.js";
 import { white, black } from "../Shared/Constants.js";
 import { Move } from "../Shared/Move.js";
 
@@ -89,8 +89,6 @@ export function handleGameStart() {
 }
 
 export function syncGameWithServer(gameStatus) {
-  console.log(gameStatus.whiteTime);
-  console.log(gameStatus.blackTime);
   engine.clrToMove = gameStatus.clrToMove;
   engine.result = gameStatus.gameResult;
   whiteTimer.remainingTime = gameStatus.whiteTime;
@@ -103,7 +101,12 @@ export function resignGame() {
 }
 
 export function getHint() {
-  startBotEvaluation(engine.board);
+  //Giving a glow effect to the hint button while waiting for the bot's result
+  const hintBtn = document.getElementById("hintBTN");
+  if (hintBtn) {
+    hintBtn.classList.add("btn-glowing");
+  }
+  startBotSearch(engine.board, "evaluate");
 }
 
 export function handleGameEnd(result) {
@@ -128,7 +131,7 @@ export function registerMove(playedMove) {
       //Let the bot play if bot mode and player just moved
       if (engine.clrToMove == clientColor) {
         playMoveLocally(playedMove);
-        startBotSearch(engine.board);
+        startBotSearch(engine.board, "search");
       }
       break;
     case "local":
@@ -157,16 +160,21 @@ export function playMoveLocally(move, shouldPlaySounds = true) {
   if (gameIsOver()) handleGameEnd(engine.result);
 }
 
-export function setBotEvaluation(bestMove, evaluation) {
+export function setBotEvaluation(bestMove, evaluation, principalVariation) {
+  const hintBtn = document.getElementById("hintBTN");
+  if (hintBtn) {
+    hintBtn.classList.remove("btn-glowing");
+  }
   lastEvaluation.bestMove = bestMove;
   //The bot always returns a positive score when it is winning, so multiply by -1 when black is winning for standard visualization
   lastEvaluation.evaluation = engine.clrToMove == white ? evaluation : -evaluation;
+  lastEvaluation.pv = principalVariation;
 }
 
 window.redoMove = function () {
   if (!gameIsOver()) return;
   if (engine.redoHistory.length == 0) return;
-  setBotEvaluation(null, null);
+  setBotEvaluation(null, 0, null);
   const moveToRedo = engine.redoHistory[engine.redoHistory.length - 1];
   playMoveSound(moveToRedo);
   engine.redoMove();
@@ -176,7 +184,7 @@ window.redoMove = function () {
 window.undoMove = function () {
   if (!gameIsOver()) return;
   if (engine.moveHistory.length == 0) return;
-  setBotEvaluation(null, null);
+  setBotEvaluation(null, 0, null);
   const moveToUndo = engine.moveHistory[engine.moveHistory.length - 1];
   engine.undoMove();
   playMoveSound(moveToUndo);

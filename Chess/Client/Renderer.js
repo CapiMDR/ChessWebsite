@@ -91,7 +91,7 @@ window.draw = function () {
 
   //debugView(engine);
 
-  drawBestMoveArrow();
+  drawBotAnalysis();
   drawUIText(engine);
   drawUITimers(engine);
   drawCapturedPieces(engine);
@@ -385,7 +385,7 @@ function drawPromotionUI(engine) {
 }
 
 //Draws arrow between two squares
-function drawArrow(fromSq, toSq, clr = color(0)) {
+function drawArrow(fromSq, toSq, clr = color(0), thickness) {
   //Convert square index into file/rank
   let fromFile = adjustFile(BoardUtil.squareToFile(fromSq));
   let fromRank = adjustRank(BoardUtil.squareToRank(fromSq));
@@ -400,7 +400,7 @@ function drawArrow(fromSq, toSq, clr = color(0)) {
 
   //Draw main arrow line
   stroke(clr);
-  strokeWeight(8);
+  strokeWeight(thickness);
   line(x1, y1, x2, y2);
 
   //Draw arrowhead
@@ -418,15 +418,38 @@ function drawArrow(fromSq, toSq, clr = color(0)) {
 export const lastEvaluation = {
   bestMove: null,
   evaluation: 0,
+  pv: null,
 };
 
-//Draws an arrow for the recommended move by CapraStar
-function drawBestMoveArrow() {
-  const lastBestMove = lastEvaluation.bestMove;
-  if (lastBestMove == null) return;
-  const startSquare = Move.startSqr(lastBestMove);
-  const targetSquare = Move.targetSqr(lastBestMove);
-  drawArrow(startSquare, targetSquare, color(76, 217, 228));
+//Draws arrows to represent the principal variation (best moves for either side to a static depth) after CapraStar evaluation
+function drawBotAnalysis() {
+  const pv = lastEvaluation.pv;
+  if (!pv) return;
+
+  let baseColorStart = color("#da2358");
+  let baseColorEnd = color("#0B5B99");
+
+  for (let i = 0; i < pv.length; i++) {
+    const move = pv[i];
+    const startSquare = Move.startSqr(move);
+    const targetSquare = Move.targetSqr(move);
+
+    const targetFile = BoardUtil.squareToFile(targetSquare);
+    const targetRank = BoardUtil.squareToRank(targetSquare);
+
+    //Interpolate color along PV
+    const t = i / pv.length;
+    const c = lerpColor(baseColorStart, baseColorEnd, t);
+
+    const thickness = map(i, 0, pv.length, 12, 2);
+
+    drawArrow(startSquare, targetSquare, c, thickness);
+
+    fill(255);
+    noStroke();
+    textSize(18);
+    text(i + 1, squareSize * targetFile + 10, squareSize * targetRank + squareSize * 0.25);
+  }
 }
 
 let currentEval = 0;
@@ -485,6 +508,26 @@ export function playSound(type) {
   }
 }
 
+//Notes: Move must not have been played already to play the right sound. This function does not play check sounds
+export function playMoveSound(move) {
+  const flag = Move.flag(move);
+  const targetSquare = Move.targetSqr(move);
+  const capturedPiece = engine.board.piecesList[targetSquare];
+  const capturedPieceType = Piece.type(capturedPiece);
+
+  if (flag == castleFlag) {
+    castle_Sound.play();
+    return;
+  }
+
+  if (capturedPieceType != none || flag == enPassantFlag) {
+    capture_Sound.play();
+    return;
+  }
+
+  move_Sound.play();
+}
+
 //Adjust file and rank when the board is rotated visually
 function adjustFile(file) {
   return flipBoard ? 7 - file : file;
@@ -515,26 +558,6 @@ function unsetEffects() {
   drawingContext.shadowOffsetX = 0;
   drawingContext.shadowOffsetY = 0;
   drawingContext.shadowColor = 0;
-}
-
-//Notes: Move must not have been played already to play the right sound. This function does not play check sounds
-export function playMoveSound(move) {
-  const flag = Move.flag(move);
-  const targetSquare = Move.targetSqr(move);
-  const capturedPiece = engine.board.piecesList[targetSquare];
-  const capturedPieceType = Piece.type(capturedPiece);
-
-  if (flag == castleFlag) {
-    castle_Sound.play();
-    return;
-  }
-
-  if (capturedPieceType != none || flag == enPassantFlag) {
-    capture_Sound.play();
-    return;
-  }
-
-  move_Sound.play();
 }
 
 export function updateMoveList(move) {
