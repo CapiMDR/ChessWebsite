@@ -330,3 +330,12 @@ body {
   animation: spin 1s linear infinite;
   margin: 20px auto;
 }
+
+.link-text {
+  color: #da2358;
+  text-decoration: none;
+}
+
+.menu-txt {
+  color: #cfcfcf;
+}
