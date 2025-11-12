@@ -5,9 +5,14 @@
 import { Move } from "../Shared/Move.js";
 import { Engine, GameResult } from "../Shared/Engine.js";
 import { Timer } from "../Shared/Timer.js";
-import { uiController } from "./UIController.js";
 import { white, black } from "../Shared/Constants.js";
-import { serverEvents } from "./ClientNetwork.js";
+import { networkEvents } from "./ClientNetwork.js";
+import { botEvents } from "./BotController.js";
+
+//Listen for bot moves and play them locally
+botEvents.addEventListener("botMove", (e) => {
+  gameController.playMoveLocally(e.detail);
+});
 
 export class GameController {
   constructor(startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
@@ -30,8 +35,8 @@ export class GameController {
     this.whiteTimer.addEventListener("timeout", () => this.handleLocalTimeout(white));
     this.blackTimer.addEventListener("timeout", () => this.handleLocalTimeout(black));
 
-    serverEvents.addEventListener("startGame", () => this.handleGameStart());
-    serverEvents.addEventListener("endGame", (e) => {
+    networkEvents.addEventListener("startGame", () => this.handleGameStart());
+    networkEvents.addEventListener("endGame", (e) => {
       this.handleGameEnd(e.detail.gameStatus.gameResult);
     });
   }
@@ -44,31 +49,32 @@ export class GameController {
   }
 
   handleGameStart() {
-    document.getElementById("overlay").style.display = "none"; //Disabling shadow over canvas
     this.engine.startGame();
-    uiController.playSound("Start");
+    gameEvents.dispatchEvent(new CustomEvent("startGame"));
   }
 
   handleGameEnd(result) {
     this.engine.result = result;
     this.engine.timers[white].stop();
     this.engine.timers[black].stop();
-    uiController.playSound("End");
+    this.engine.gameIsOver = true;
+    gameEvents.dispatchEvent(new CustomEvent("endGame", { detail: this.engine.result }));
   }
 
   //Any move received is played on the local board
   playMoveLocally(move, shouldPlaySounds = true) {
-    if (this.gameIsOver()) return;
-
     //TODO: Allow for move undoing/redoing during the game and resynching the board when a new move arrives
-    if (shouldPlaySounds) uiController.playMoveSound(move);
-    uiController.updateMoveList(move);
+    gameEvents.dispatchEvent(new CustomEvent("movePlayed", { detail: { move: move, shouldPlaySounds } }));
     this.engine.playMove(move, false);
-    if (this.engine.inCheck && shouldPlaySounds) uiController.playSound("Check");
+    if (this.engine.inCheck) gameEvents.dispatchEvent(new CustomEvent("inCheck", { detail: { shouldPlaySounds } }));
 
     //Handle local game end (only when not playing online as that should stay server-authoritative)
     if (this.gameMode == "online") return;
     if (this.gameIsOver()) this.handleGameEnd(this.engine.result);
+  }
+
+  gameInProgress() {
+    return this.engine.result == GameResult.inProgress;
   }
 
   gameIsOver() {
@@ -106,7 +112,27 @@ export class GameController {
       this.playMoveLocally(move, false);
     }
   }
+
+  undoMove() {
+    if (!gameController.gameIsOver()) return;
+    if (gameController.engine.moveHistory.length == 0) return;
+    const moveToUndo = gameController.engine.moveHistory[gameController.engine.moveHistory.length - 1];
+    gameController.engine.undoMove();
+    gameEvents.dispatchEvent(new CustomEvent("moveUndo", { detail: { move: moveToUndo } }));
+    if (gameController.engine.inCheck) gameEvents.dispatchEvent(new CustomEvent("inCheck", { detail: { shouldPlaySounds: true } }));
+  }
+
+  redoMove() {
+    if (!gameController.gameIsOver()) return;
+    if (gameController.engine.redoHistory.length == 0) return;
+    const moveToRedo = gameController.engine.redoHistory[gameController.engine.redoHistory.length - 1];
+
+    gameEvents.dispatchEvent(new CustomEvent("movePlayed", { detail: { move: moveToRedo, shouldPlaySounds: true } }));
+    gameController.engine.redoMove();
+    if (gameController.engine.inCheck) gameEvents.dispatchEvent(new CustomEvent("inCheck", { detail: { shouldPlaySounds: true } }));
+  }
 }
 
 export const gameController = new GameController();
+export const gameEvents = new EventTarget();
 export const engine = gameController.engine;

@@ -1,4 +1,6 @@
-//Handles canvas (board, timers, etc) drawing and sounds
+/**
+ * Handles canvas (board, timers, etc) drawing
+ */
 import { BBUtil } from "../Shared/BBUtil.js";
 import { Piece } from "../Shared/Piece.js";
 import { Move } from "../Shared/Move.js";
@@ -7,7 +9,7 @@ import { white, black, pawn, knight, bishop, rook, queen, king, enPassantFlag } 
 import { selectedSquare, dragging } from "./Input.js";
 import { GameResult } from "../Shared/Engine.js";
 import { clientColor, flipBoard, onPageLoaded } from "./ClientController.js";
-import { gameController, engine } from "./GameController.js";
+import { gameController, engine, gameEvents } from "./GameController.js";
 import { botEvents } from "./BotController.js";
 
 const windowHeight = window.innerHeight;
@@ -419,6 +421,11 @@ function drawArrow(fromSq, toSq, clr = color(0), thickness) {
 
 botEvents.addEventListener("botEvaluation", (e) => {
   updateBotEvaluation(e.detail);
+});
+
+gameEvents.addEventListener("moveUndo", () => {
+  //Clearing bot evaluation on move undo
+  updateBotEvaluation({ bestMove: null, evaluation: 0, pv: null });
 });
 
 let botEvaluation = {

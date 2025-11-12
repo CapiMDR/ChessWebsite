@@ -22,7 +22,6 @@ export class Engine {
     this.clrToMove = this.board.clrToMove;
     this.inCheck = false; //If any king is in check in the current position
     this.result = GameResult.starting;
-    this.gameIsOver = false;
 
     //Holds 2 timers indexed by color
     this.timers = [];
@@ -63,7 +62,6 @@ export class Engine {
     if (this.isThreefoldRepetition()) this.result = GameResult.drawByRepetition;
     if (this.isInsufficientMaterial()) this.result = GameResult.insufficientMaterial;
     this.manageTimers();
-    if (this.result != GameResult.inProgress && !this.gameIsOver) this.gameIsOver = true;
   }
 
   //For both players & bots, final moves must be made through this function for the game to update correctly

@@ -1,7 +1,7 @@
 //Runs a game locally using the moves/results received from the server
 import { GameResult } from "../Shared/Engine.js";
-import { sendToServer, startConnection, serverEvents } from "./ClientNetwork.js";
-import { botController, botEvents } from "./BotController.js";
+import { sendToServer, startConnection, networkEvents } from "./ClientNetwork.js";
+import { botController } from "./BotController.js";
 import { gameController } from "./GameController.js";
 import { uiController } from "./UIController.js";
 import { white, black } from "../Shared/Constants.js";
@@ -10,82 +10,114 @@ export let clientColor; //Color assigned to this client by the server
 clientColor = white; //TEMPORARY DEFAULT ASSIGNMENT TO WHITE FOR PLAYING AGAINST THE BOT UNTIL USER SELECTION IS ALLOWED BEFORE GAME START
 export let flipBoard; //Controls whether the board should be drawn in black's perspective
 
+const modeHandlers = {
+  online: handleOnlineMode,
+  bot: handleBotMode,
+  local: handleLocalMode,
+  analyze: handleAnalyzeMode,
+};
+
 //Called from Renderer.js, figure out which game mode this client is on and act accordingly
 export function onPageLoaded() {
-  if (gameController.engine.result != GameResult.starting) return;
-  switch (gameController.gameMode) {
-    case "online":
-      //If online mode, tell server this client is ready
-      startConnection();
-      sendToServer({ type: "ready" });
-      break;
-    case "bot":
-      botController.initializeBot();
-      flipBoard = clientColor == black ? true : false;
-      break;
-    case "local":
-      flipBoard = clientColor == black ? true : false;
-      break;
-    case "analyze":
-      botController.initializeBot();
-      gameController.importSANGame(window.movesList);
-      gameController.handleGameStart();
-      //Set client color to spectator to stop them from making moves during analysis
-      clientColor = "spectator";
-      //Stopping both timers in case the game ended by resignation halfway through it
-      gameController.engine.timers[white].stop();
-      gameController.engine.timers[black].stop();
-      gameController.engine.result = GameResult.Analyzing;
-      break;
-  }
+  if (gameController.engine.result !== GameResult.starting) return;
+  const handler = modeHandlers[gameController.gameMode];
+  if (handler) handler();
+  else console.warn("Unhandled gamemode type: ", gameController.gameMode);
 }
+
+function handleOnlineMode() {
+  startConnection();
+  //If online mode, tell server this client is ready
+  sendToServer({ type: "ready" });
+}
+
+function handleBotMode() {
+  botController.initializeBot();
+  flipBoard = clientColor === black;
+}
+
+function handleLocalMode() {
+  flipBoard = clientColor === black;
+}
+
+function handleAnalyzeMode() {
+  botController.initializeBot();
+  gameController.importSANGame(window.movesList);
+  gameController.handleGameStart();
+  //Set client color to spectator to stop them from making moves during analysis
+  clientColor = "spectator";
+  //Ending the game in case it ended halfway through it (timeout/resignation)
+  gameController.handleGameEnd(GameResult.Analyzing);
+}
+
+//On local move registered events
+const modeMoveHandlers = {
+  online: handleOnlineMove,
+  bot: handleBotMove,
+  local: handleLocalMove,
+};
 
 //Registers a move played locally. If multiplayer, sends it to the server for validation, otherwise just plays it immediately
 export function registerMove(playedMove) {
   //Don't register any move locally if undoing moves
   if (gameController.engine.isUndoingMoves()) return;
+  if (!gameController.gameInProgress()) return;
 
-  switch (gameController.gameMode) {
-    case "online":
-      //Only send move to server if it's this client's turn
-      if (clientColor == gameController.engine.clrToMove) sendToServer({ type: "move", move: playedMove });
-      break;
-    case "bot":
-      //Let the bot play if bot mode and player just moved
-      if (gameController.engine.clrToMove == clientColor) {
-        gameController.playMoveLocally(playedMove);
-        botController.startBotSearch(gameController.engine.board, "search");
-      }
-      break;
-    case "local":
-      //If localmode play the move immediately
-      gameController.playMoveLocally(playedMove);
-      flipBoard = gameController.engine.clrToMove == black ? true : false;
-      break;
+  const handler = modeMoveHandlers[gameController.gameMode];
+  if (handler) handler(playedMove);
+}
+
+function handleOnlineMove(playedMove) {
+  //Only send move to server if it's this client's turn
+  if (clientColor == gameController.engine.clrToMove) {
+    sendToServer({ type: "move", move: playedMove });
   }
 }
 
-//Listen for server events
-serverEvents.addEventListener("joinMatch", handleEvent);
-serverEvents.addEventListener("move", handleEvent);
-serverEvents.addEventListener("syncGame", handleEvent);
-
-function handleEvent(event) {
-  switch (event.type) {
-    case "joinMatch":
-      joinServerGame(event.detail.color);
-      break;
-    case "move":
-      gameController.playMoveLocally(event.detail.move);
-      syncGameWithServer(event.detail.gameStatus);
-      break;
-    case "syncGame":
-      playAllServerMoves(event.detail.gameStatus);
-      syncGameWithServer(event.detail.gameStatus);
-      break;
-    default:
-      console.warn("Unhandled event:", event.type);
+function handleBotMove(playedMove) {
+  //Let the bot play if bot mode and player just moved
+  if (gameController.engine.clrToMove == clientColor) {
+    gameController.playMoveLocally(playedMove);
+    botController.startBotSearch(gameController.engine.board, "search");
   }
+}
+
+function handleLocalMove(playedMove) {
+  //If localmode play the move immediately
+  gameController.playMoveLocally(playedMove);
+  flipBoard = gameController.engine.clrToMove == black ? true : false;
+}
+
+//Events from server
+const networkEventHandlers = {
+  joinMatch: onJoinMatch,
+  move: onMove,
+  syncGame: onSyncGame,
+};
+
+//Add all event listener from the serverEventHandlers automatically
+Object.keys(networkEventHandlers).forEach((eventType) => {
+  networkEvents.addEventListener(eventType, handleNetworkEvent);
+});
+
+function handleNetworkEvent(event) {
+  const handler = networkEventHandlers[event.type];
+  if (handler) handler(event);
+  else console.warn("Unhandled event: ", event.type);
+}
+
+function onJoinMatch(event) {
+  joinServerGame(event.detail.color);
+}
+
+function onMove(event) {
+  gameController.playMoveLocally(event.detail.move);
+  syncGameWithServer(event.detail.gameStatus);
+}
+
+function onSyncGame(event) {
+  playAllServerMoves(event.detail.gameStatus);
+  syncGameWithServer(event.detail.gameStatus);
 }
 
 function playAllServerMoves(gameStatus) {
@@ -94,11 +126,6 @@ function playAllServerMoves(gameStatus) {
     gameController.playMoveLocally(move, false);
   }
 }
-
-//Listen for bot moves and play them locally
-botEvents.addEventListener("botMove", (e) => {
-  gameController.playMoveLocally(e.detail);
-});
 
 //Rerceives assigned color from server
 function joinServerGame(color) {
@@ -122,21 +149,3 @@ export function getHint() {
   uiController.glowHintButton();
   botController.startBotSearch(gameController.engine.board, "evaluate");
 }
-
-window.redoMove = function () {
-  if (!gameController.gameIsOver()) return;
-  if (gameController.engine.redoHistory.length == 0) return;
-  const moveToRedo = gameController.engine.redoHistory[gameController.engine.redoHistory.length - 1];
-  uiController.playMoveSound(moveToRedo);
-  gameController.engine.redoMove();
-  if (gameController.engine.inCheck) uiController.playSound("Check");
-};
-
-window.undoMove = function () {
-  if (!gameController.gameIsOver()) return;
-  if (gameController.engine.moveHistory.length == 0) return;
-  const moveToUndo = gameController.engine.moveHistory[gameController.engine.moveHistory.length - 1];
-  gameController.engine.undoMove();
-  uiController.playMoveSound(moveToUndo);
-  if (gameController.engine.inCheck) uiController.playSound("Check");
-};

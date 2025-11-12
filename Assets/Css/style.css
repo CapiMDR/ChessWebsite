@@ -249,6 +249,39 @@ body {
   background: rgba(237, 34, 93, 0.22);
 }
 
+@keyframes glowing {
+  0% {
+    box-shadow: 0 0 5px #0b5b99, 0 0 10px #da2358, 0 0 15px #ff7fb2;
+  }
+  50% {
+    box-shadow: 0 0 10px rgb(255, 85, 150), 0 0 20px #da2358, 0 0 25px #ffa2c6;
+  }
+  100% {
+    box-shadow: 0 0 5px #0b5b99, 0 0 10px #da2358, 0 0 15px #ff7fb2;
+  }
+}
+
+.btn-glowing {
+  animation: glowing 1.5s ease-in-out infinite;
+  background: rgba(245, 245, 245, 0.15);
+}
+
+.btn-styled-disabled {
+  border: none;
+  background: rgba(134, 134, 134, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  color: #ffffff57;
+  font-weight: 500;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: left;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .chess-piece {
   position: fixed;
   opacity: 0.1;
