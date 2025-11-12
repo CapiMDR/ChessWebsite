@@ -44,15 +44,15 @@
             <ol id="movesList"></ol>
           </div>
           <div id="moveBTNS">
-            <input type="button" class="btn-styled btn-large scalable" id="undoMoveBTN" value="↩" onclick="undoMove()"/>
-            <input type="button" class="btn-styled btn-large scalable" id="redoMoveBTN" value="↪" onclick="redoMove()"/>
+            <input type="button" class="btn-styled-disabled btn-large" id="undoMoveBTN" value="↩" data-action="undoMove"/>
+            <input type="button" class="btn-styled-disabled btn-large" id="redoMoveBTN" value="↪" data-action="redoMove"/>
             <?php if ($mode === 'online'): ?>
-              <button class="btn-styled btn-large scalable" id="resignBTN">
+              <button class="btn-styled-disabled btn-large" id="resignBTN" data-action="resign">
                 <span class="material-icons">flag</span>
               </button>
             <?php endif; ?>
             <?php if ($mode === 'analyze'): ?>
-              <button class="btn-styled btn-large scalable" id="hintBTN">
+              <button class="btn-styled btn-large scalable" id="hintBTN" data-action="getHint">
                 <span class="material-icons">lightbulb</span>
               </button>
             <?php endif; ?>
@@ -66,7 +66,7 @@
                 <p>Waiting for another player to join...</p>
               </div>
             <?php else: ?>
-              <button class="btn-styled-red btn-larger" id="playBTN">
+              <button class="btn-styled-red btn-larger" id="playBTN" data-action="startGame">
                 <span class="material-icons" style="font-size: 3rem;">play_arrow</span>
               </button>
             <?php endif; ?>

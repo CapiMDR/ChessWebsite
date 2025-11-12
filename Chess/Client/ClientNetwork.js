@@ -21,7 +21,8 @@ export function startConnection() {
   //Message handler for messages received from server
   socket.on("message", (msg) => {
     if (msg.type == "joinMatch") joinedMatchID = msg.matchID;
-    serverEvents.dispatchEvent(new CustomEvent(msg.type, { detail: msg }));
+    //Throw event when a message is received from the server (handled by GameController and ClientController)
+    networkEvents.dispatchEvent(new CustomEvent(msg.type, { detail: msg }));
   });
 }
 
@@ -31,4 +32,4 @@ export function sendToServer(msgContent) {
   socket.emit("message", msgContent);
 }
 
-export const serverEvents = new EventTarget();
+export const networkEvents = new EventTarget();
