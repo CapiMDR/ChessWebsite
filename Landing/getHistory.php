@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once("../db_connect.php");
+require_once("./db_connect.php");
 
 header('Content-Type: application/json');
 
@@ -24,19 +24,19 @@ $sql = "
         m.result as absolute_result, 
         m.pgn,
         m.whitePlayerId,
-        m.blackPlayerID,
+        m.blackPlayerId,
         u1.username as white_username,
         u2.username as black_username
-    FROM matchs m
+    FROM matches m
     JOIN users u1 ON m.whitePlayerId = u1.id
-    JOIN users u2 ON m.blackPlayerID = u2.id
-    WHERE m.whitePlayerId = ? OR m.blackPlayerID = ?
+    JOIN users u2 ON m.blackPlayerId = u2.id
+    WHERE m.whitePlayerId = ? OR m.blackPlayerId = ?
     ORDER BY m.idMatch DESC
 ";
 
 //Prepare the SQL statement using the connection object
 if ($stmt = $conn->prepare($sql)) {
-    // Bind the parameters to the placeholder (?) the parameters are strings
+    //Bind the parameters to the placeholder (?) the parameters are strings
     $stmt->bind_param("ss", $myID, $myID);
 
     $stmt->execute();
@@ -51,7 +51,7 @@ if ($stmt = $conn->prepare($sql)) {
     while ($row = $result->fetch_assoc()) {
 
         
-        $amIWhite = isUserWhite($myID, $row['whitePlayerId'])
+        $amIWhite = isUserWhite($myID, $row['whitePlayerId']);
         //Determine My Color (for display)
         $myColorText = $amIWhite ? 'White' : 'Black';
         //Determine the opponent name
@@ -76,8 +76,8 @@ if ($stmt = $conn->prepare($sql)) {
     $stmt->close();
 
 } else {
-    //failded
-    echo json_encode(['user' => $currentUser, 'history' => [], 'error' => $conn->error]);
+    //failed
+    echo json_encode(['user' => $currentUser, 'history' => []]);
 }
 
 $conn->close();

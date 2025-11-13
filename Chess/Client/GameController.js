@@ -95,6 +95,7 @@ export class GameController {
 
   //Imports a game written in SAN format (ex Nf3)
   importSANGame(movesString) {
+    if (movesString == "") return;
     //Remove move numbers like "1-e4", "2-Nf3", "3..." etc.
     const sanitized = movesString.replace(/\d+[-.]/g, "");
 

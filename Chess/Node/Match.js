@@ -47,7 +47,7 @@ export class Match {
     return assigned;
   }
 
-  handlePlayerReady(socket, player) {
+  onPlayerJoin(socket, player) {
     const assignedColor = this.assignColor(player);
     //Tell client which match they joined and as which color
     respondToClient(socket, { type: "joinMatch", matchID: this.ID, color: assignedColor });
@@ -98,21 +98,16 @@ export class Match {
       status.gameResult = whiteResigned ? GameResult.whiteResigned : GameResult.blackResigned;
       this.engine.result = status.gameResult;
     }
-    
+
     this.engine.timers[white].stop();
     this.engine.timers[black].stop();
     sendToAllClients({ type: "endGame", matchID: this.ID, gameStatus: status });
     matchManager.removeMatch(this.ID);
 
-    //generate PGN and save
+    //Generate PGN and save
     const pgn = this.generatePGN();
-    
-    saveGameToDB(
-        this.originalPlayers[white],
-        this.originalPlayers[black],
-        this.engine.result,
-        pgn
-    );
+
+    saveGameToDB(this.ID, this.originalPlayers[white], this.originalPlayers[black], this.engine.result, pgn);
   }
 
   generatePGN() {
@@ -127,7 +122,7 @@ export class Match {
       const move = this.engine.moveHistory[i];
       const uci = Move.toString(move);
       const san = Move.UCIToSAN(uci, tempEngine.board);
-      
+
       if (i % 2 === 0) {
         pgnString += `${moveNumber}. ${san} `;
       } else {
