@@ -60,7 +60,7 @@
             <?php endif; ?>
           </div>
         </div>
-        <div id="canvasContainer">
+        <div id="boardContainer">
           <div id="overlay">
             <?php if ($mode === 'online'): ?>
               <div class="loader-container">
@@ -74,10 +74,11 @@
             <?php endif; ?>
           </div>
         </div>
+        <div id="UIContainer"></div>
       </div>
     </div>
     <main></main>
-    <script type="module" src="./Renderer.js"></script>
+    <script type="module" src="./MainRenderer.js"></script>
     <script type="module" src="./Input.js"></script>
   </body>
 </html>

@@ -1,107 +1,109 @@
 /**
- * Handles all user input methods (clicking/dragging pieces)
+ * Handles all user input (clicking, dragging pieces)
+ * Works with the BoardRenderer.js p5 instance
  */
-import { squareSize, promotionMenu, boardSize } from "./Renderer.js";
+
 import { Move } from "../Shared/Move.js";
 import { GameResult } from "../Shared/Engine.js";
 import { BoardUtil } from "../Shared/BoardUtil.js";
 import { knight, bishop, rook, queen, promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag } from "../Shared/Constants.js";
 import { registerMove, flipBoard } from "./ClientController.js";
 import { engine } from "./GameController.js";
+import { squareSize, promotionMenu, boardSize } from "./BoardRenderer.js";
+import { boardP5 } from "./MainRenderer.js";
+import { selectedSquare, selectToggle, dragging, setSelectedSquare, toggleSelect, resetSelection, setDragging } from "./ClientController.js";
 
-export let selectedSquare;
-export let selectToggle = true;
-export let dragging = false;
+// --- Attach input handlers to the board's p5 instance ---
+boardP5.touchStarted = function () {
+  if (engine.result === GameResult.starting) return;
 
-window.touchStarted = function () {
-  if (engine.result == GameResult.starting) return;
-  const { currentFile, currentRank, currentSquare } = getCurrentMouseCoords(mouseX, mouseY);
+  const { currentFile, currentRank, currentSquare } = getCurrentMouseCoords(this.mouseX, this.mouseY);
 
   if (promotionMenu.active) {
     const playedMove = handlePromotionClick(currentFile, currentRank);
-    if (playedMove != undefined) registerMove(playedMove);
+    if (playedMove) registerMove(playedMove);
     return;
   }
 
   if (BoardUtil.outOfBounds(currentFile, currentRank)) {
-    selectedSquare = undefined;
+    resetSelection();
     return;
   }
 
-  if (selectedSquare != undefined) {
+  if (selectedSquare !== null) {
     const playedMove = searchMoves(selectedSquare, currentSquare);
-    if (playedMove != undefined) {
+    if (playedMove) {
       registerMove(playedMove);
-      selectedSquare = undefined;
+      resetSelection();
       return;
     }
   }
 
-  selectToggle = !selectToggle;
-  if (selectedSquare != currentSquare) selectToggle = false;
-  selectedSquare = currentSquare;
+  toggleSelect(currentSquare);
+  setSelectedSquare(currentSquare);
 };
 
-window.touchMoved = function () {
-  if (engine.result == GameResult.starting) return;
-  dragging = true;
+boardP5.touchMoved = function () {
+  if (engine.result === GameResult.starting) return;
+  setDragging(true);
 };
 
-window.touchEnded = function () {
-  if (engine.result == GameResult.starting) return;
-  dragging = false;
-  if (selectedSquare == undefined) return;
-  const { currentFile: releasedFile, currentRank: releasedRank, currentSquare: releasedSquare } = getCurrentMouseCoords(mouseX, mouseY);
+boardP5.touchEnded = function () {
+  if (engine.result === GameResult.starting) return;
+  setDragging(false);
 
-  if (BoardUtil.outOfBounds(releasedFile, releasedRank)) return;
+  if (selectedSquare === null) return;
 
-  //If the promotion UI is active, don't get a new move
+  const { currentFile, currentRank, currentSquare } = getCurrentMouseCoords(this.mouseX, this.mouseY);
+  if (BoardUtil.outOfBounds(currentFile, currentRank)) return;
+
   if (promotionMenu.active) return;
-  const playedMove = searchMoves(selectedSquare, releasedSquare);
-  if (playedMove != undefined) registerMove(playedMove);
 
-  if (releasedSquare != selectedSquare || selectToggle || (releasedSquare == selectedSquare && dragging)) {
-    selectedSquare = undefined;
+  const playedMove = searchMoves(selectedSquare, currentSquare);
+  if (playedMove) registerMove(playedMove);
+
+  if (currentSquare !== selectedSquare || selectToggle || dragging) {
+    resetSelection();
   }
 };
 
+// --- Helper functions ---
 function searchMoves(moveFrom, moveTo) {
   const moveToFile = BoardUtil.squareToFile(moveTo);
   const moveToRank = BoardUtil.squareToRank(moveTo);
-  //Looking for a move that matches with the user input
+
   for (let move of engine.moves) {
     const moveStartSqr = Move.startSqr(move);
     const moveTargetSqr = Move.targetSqr(move);
-    if (moveStartSqr != moveFrom || moveTargetSqr != moveTo) continue;
+    if (moveStartSqr !== moveFrom || moveTargetSqr !== moveTo) continue;
 
     if (Move.isPromotion(move)) {
-      //Open promotion menu at the target square
-      let x = flipBoard ? boardSize - moveToFile * squareSize - squareSize : moveToFile * squareSize;
-      let y = flipBoard ? boardSize - moveToRank * squareSize - squareSize : moveToRank * squareSize;
+      const x = flipBoard ? boardSize - moveToFile * squareSize - squareSize : moveToFile * squareSize;
+      const y = flipBoard ? boardSize - moveToRank * squareSize - squareSize : moveToRank * squareSize;
 
       promotionMenu.active = true;
       promotionMenu.x = x;
       promotionMenu.y = y;
       promotionMenu.move = move;
-      return undefined; //Wait for user to choose promotion
+      return undefined;
     }
-    return move; //Return the move if it wasn't a promotion
+
+    return move;
   }
   return undefined;
 }
 
-//Handles clicks whenever the promotion menu is active
 function handlePromotionClick(file, rank) {
-  selectedSquare = undefined;
+  resetSelection();
   const { x, y, options, move } = promotionMenu;
 
-  const menuFile = floor(x / squareSize);
-  const menuRank = floor(y / squareSize);
+  const menuFile = Math.floor(x / squareSize);
+  const menuRank = Math.floor(y / squareSize);
 
   const adjustedFile = flipBoard ? 7 - file : file;
   const adjustedRank = flipBoard ? 7 - rank : rank;
 
-  if (adjustedFile == menuFile) {
+  if (adjustedFile === menuFile) {
     const optionIndex = adjustedRank - menuRank;
     if (optionIndex >= 0 && optionIndex < options.length) {
       const startSquare = Move.startSqr(move);
@@ -123,23 +125,26 @@ function handlePromotionClick(file, rank) {
           promotionFlag = promoteQueenFlag;
           break;
       }
-      //If the user clicked on a piece image, make the promotion
+
       promotionMenu.active = false;
       return Move.newMove(startSquare, targetSquare, promotionFlag);
     }
   }
-  //Otherwise just close the promotion menu
+
   promotionMenu.active = false;
   return undefined;
 }
 
-//Gets the file, rank and square indeces the mouse is over. Canvas coordinates to chess coordinates
 function getCurrentMouseCoords(x, y) {
-  const file = floor(x / squareSize);
-  const rank = floor(y / squareSize);
+  const file = Math.floor(x / squareSize);
+  const rank = Math.floor(y / squareSize);
 
   const realFile = flipBoard ? 7 - file : file;
   const realRank = flipBoard ? 7 - rank : rank;
 
-  return { currentFile: realFile, currentRank: realRank, currentSquare: BoardUtil.indexToSquare(realFile, realRank) };
+  return {
+    currentFile: realFile,
+    currentRank: realRank,
+    currentSquare: BoardUtil.indexToSquare(realFile, realRank),
+  };
 }
