@@ -18,12 +18,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $checkIfUserExists_sql = "SELECT username FROM users WHERE username = '$user'";
     $result = $conn->query($checkIfUserExists_sql);
 
+    //Disallow duplicate usernames
     if ($result->num_rows > 0) {
         $response['message'] = 'Username is already registered';
         respond($response, $conn);
     }
 
-    $insertUser_sql = "INSERT INTO users (username, email, password) VALUES ('$user', '$email', '$pass')";
+    //Generate UUID
+    $userId = sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+
+    $insertUser_sql = "INSERT INTO users (id, username, email, password) VALUES ('$userId', '$user', '$email', '$pass')";
 
     if ($conn->query($insertUser_sql)){
         $response['success'] = true;

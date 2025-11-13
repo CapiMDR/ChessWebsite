@@ -35,7 +35,9 @@ export class GameController {
     this.whiteTimer.addEventListener("timeout", () => this.handleLocalTimeout(white));
     this.blackTimer.addEventListener("timeout", () => this.handleLocalTimeout(black));
 
-    networkEvents.addEventListener("startGame", () => this.handleGameStart());
+    networkEvents.addEventListener("startGame", () => {
+      this.handleGameStart();
+    });
     networkEvents.addEventListener("endGame", (e) => {
       this.handleGameEnd(e.detail.gameStatus.gameResult);
     });

@@ -11,6 +11,7 @@ import { GameResult } from "../Shared/Engine.js";
 import { clientColor, flipBoard, onPageLoaded } from "./ClientController.js";
 import { gameController, engine, gameEvents } from "./GameController.js";
 import { botEvents } from "./BotController.js";
+import { networkEvents } from "./ClientNetwork.js";
 
 const windowHeight = window.innerHeight;
 export const boardSize = windowHeight * 0.9 * 0.8;
@@ -96,9 +97,7 @@ window.draw = function () {
   //debugView(engine);
 
   drawBotAnalysis();
-  drawUIText(engine);
-  drawUITimers(engine);
-  drawCapturedPieces(engine);
+  drawUI();
   if (promotionMenu.active) drawPromotionUI(engine);
   drawBotEval(engine);
   drawDraggedPiece(engine);
@@ -174,6 +173,12 @@ function drawDraggedPiece(engine) {
   const img = getImageFromPiece(piece);
 
   image(img, mouseX, mouseY, squareSize * 1.2, squareSize * 1.2);
+}
+
+function drawUI() {
+  drawUIText(engine);
+  drawUITimers(engine);
+  drawCapturedPieces(engine);
 }
 
 function drawCapturedPieces(engine) {
@@ -318,15 +323,40 @@ function drawCheckBubble(engine) {
   noTint();
 }
 
+networkEvents.addEventListener("startGame", (e) => {
+  //Setting up player names for rendering
+  playerNames.white = e.detail.players.white.username;
+  playerNames.black = e.detail.players.black.username;
+});
+
+let playerNames = {
+  white: null,
+  black: null,
+};
+
 function drawUIText(engine) {
   fill(255);
   noStroke();
   textSize(16);
   textAlign(CENTER);
+
+  //Game status
   if (engine.result == GameResult.inProgress) {
     text(engine.clrToMove == white ? "White to move" : "Black to move", UICenter, height / 2);
   } else {
     text(engine.result, UICenter, height / 2);
+  }
+
+  //Player names
+  const nameOffset = 75;
+  const whiteY = flipBoard ? height / 4 - nameOffset : (3 * height) / 4 + nameOffset;
+  const blackY = flipBoard ? (3 * height) / 4 + nameOffset : height / 4 - nameOffset;
+  if (playerNames.white != undefined) {
+    text(playerNames.white, UICenter, whiteY);
+  }
+
+  if (playerNames.black != undefined) {
+    text(playerNames.black, UICenter, blackY);
   }
 }
 

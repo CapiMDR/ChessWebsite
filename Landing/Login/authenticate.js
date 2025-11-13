@@ -12,6 +12,7 @@ function authenticateAccount(event) {
     })
     .then((data) => {
       const res = data.trim();
+      console.log(res);
       if (res === "valid") {
         location.assign("../index.php");
       } else {

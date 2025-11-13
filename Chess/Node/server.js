@@ -10,6 +10,7 @@ import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { matchManager } from "./MatchManager.js";
+import { getPlayerById } from "./player_query.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -63,27 +64,42 @@ app.use(express.static(path.join(__dirname, "../Chess")));
 let onlineUsers = 0;
 
 //Socket actions
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   const playerID = socket.handshake.query.playerId;
   if (!playerID) {
     console.log(`Connection without playerId rejected`);
     socket.disconnect();
     return;
   }
+
+  let player;
+  try {
+    player = await getPlayerById(playerID);
+    if (!player) {
+      console.log(`No player found with ID: ${playerID}`);
+      socket.disconnect();
+      return;
+    }
+  } catch (err) {
+    console.error("Database error fetching player:", err);
+    socket.disconnect();
+    return;
+  }
+
   onlineUsers++;
-  console.log(`Player ${playerID} connected (socket: ${socket.id}). Online: ${onlineUsers}`);
+  console.log(`Player ${player.username} connected (socket: ${socket.id}). Online: ${onlineUsers}`);
 
   socket.on("disconnect", () => {
     onlineUsers--;
-    console.log(`Player ${playerID} disconnected (socket: ${socket.id}). Online: ${onlineUsers}`);
-    matchManager.onPlayerDisconnect(playerID);
+    console.log(`Player ${player.username} disconnected (socket: ${socket.id}). Online: ${onlineUsers}`);
+    matchManager.onPlayerDisconnect(player);
   });
 
   socket.on("message", (msg) => {
     switch (msg.type) {
       //Player signals readiness, join or create a new match
       case "ready": {
-        matchManager.onPlayerReady(socket, playerID, msg.matchID);
+        matchManager.onPlayerReady(socket, player, msg.matchID);
         break;
       }
       //Player makes a move, validate legality and broadcast to all other clients on that room
@@ -92,7 +108,7 @@ io.on("connection", (socket) => {
         break;
       }
       case "resignation": {
-        matchManager.onResignation(playerID, msg.matchID);
+        matchManager.onResignation(player, msg.matchID);
         break;
       }
       default:

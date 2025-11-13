@@ -24,6 +24,8 @@
     <link rel="shortcut icon" href="../../Assets/Images/favicon.ico" type="image/x-icon">
     <meta charset="utf-8" />
     <script>
+      //Passing UUID to JS
+      window.uuid="<?php echo $_SESSION['uuid']; ?>";
       //Passing game mode to JS
       window.gameMode = "<?php echo htmlspecialchars($mode, ENT_QUOTES); ?>";
       //If the game mode is analyze, we should expect a moves list to be sent as well
