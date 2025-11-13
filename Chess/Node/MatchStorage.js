@@ -12,18 +12,10 @@ export async function saveGameToDB(whitePlayer, blackPlayer, gameResult, pgn) {
     let whiteResult = "Draw";
     let blackResult = "Draw";
 
-    if (
-        gameResult === GameResult.whiteCheckmatd || 
-        gameResult === GameResult.whiteResigned || 
-        gameResult === GameResult.whiteTimeOut
-    ) {
+    if (didBlackWin(gameResult)) {
         whiteResult = "Loss";
         blackResult = "Win";
-    } else if (
-        gameResult === GameResult.blackCheckmated || 
-        gameResult === GameResult.blackResigned || 
-        gameResult === GameResult.blackTimeOut
-    ) {
+    } else if (didWhiteWin(gameResult)) {
         whiteResult = "Win";
         blackResult = "Loss";
     }
@@ -57,4 +49,19 @@ export async function saveGameToDB(whitePlayer, blackPlayer, gameResult, pgn) {
     } catch (error) {
         console.error("Error saving game to DB:", error);
     }
+}
+
+
+//White win the Match
+function didWhiteWin(result) {
+    return result === GameResult.blackCheckmated || 
+           result === GameResult.blackResigned || 
+           result === GameResult.blackTimeOut;
+}
+
+//Black win the Match
+function didBlackWin(result) {
+    return result === GameResult.whiteCheckmated || 
+           result === GameResult.whiteResigned || 
+           result === GameResult.whiteTimeOut;
 }
