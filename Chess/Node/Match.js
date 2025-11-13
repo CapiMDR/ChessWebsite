@@ -9,7 +9,7 @@ import { saveGameToDB } from "./MatchStorage.js"; //save matches in date base
 export class Match {
   constructor(id, startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
     this.ID = id;
-    this.startFEN = startFEN;
+    this.startFEN = startFEN; //Storing startFEN to generate PGN later
     this.engine = new Engine(startFEN);
 
     this.whiteTimer = new Timer(5, 3);
