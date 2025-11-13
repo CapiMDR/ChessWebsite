@@ -8,6 +8,10 @@ canvas {
   position: relative; /* allows absolute positioning inside */
 }
 
+#UIContainer {
+  position: relative; /* allows absolute positioning inside */
+}
+
 #overlay {
   display: flex;
   align-items: center;

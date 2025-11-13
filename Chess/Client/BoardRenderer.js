@@ -80,7 +80,11 @@ export const BoardSketch = (p) => {
 
   // --- Setup ---
   p.setup = () => {
-    const cnv = p.createCanvas(boardSize, boardSize);
+    let canvasSize = boardSize;
+    if (gameController.gameMode == "bot" || gameController.gameMode == "analyze") {
+      canvasSize += evalBarThickness;
+    }
+    const cnv = p.createCanvas(canvasSize, boardSize);
     cnv.parent("boardContainer");
     onPageLoaded();
   };
