@@ -9,7 +9,7 @@ import { none, enPassantFlag, castleFlag } from "../Shared/Constants.js";
 import { botEvents } from "./BotController.js";
 import { gameController, gameEvents } from "./GameController.js";
 import { resignGame, getHint } from "./ClientController.js";
-import { capture_Sound, move_Sound, check_Sound, gameOver_Sound, start_Sound, castle_Sound } from "./Renderer.js";
+import { capture_Sound, move_Sound, check_Sound, gameOver_Sound, start_Sound, castle_Sound } from "./BoardRenderer.js";
 
 export class UIController {
   handleGameStart() {
@@ -25,7 +25,6 @@ export class UIController {
   }
 
   handleGameEnd() {
-    this.playSound("End");
     const undoMoveBtn = document.getElementById("undoMoveBTN");
     undoMoveBtn.classList.remove("btn-styled-disabled");
     undoMoveBtn.classList.add("btn-styled");
@@ -41,19 +40,20 @@ export class UIController {
       resignBtn.classList.remove("btn-styled");
       resignBtn.classList.remove("scalable");
     }
+    this.playSound("End");
   }
 
   playSound(type) {
     type = type.toLowerCase();
     switch (type) {
       case "start":
-        start_Sound.play();
+        if (start_Sound != null) start_Sound.play();
         break;
       case "end":
-        gameOver_Sound.play();
+        if (gameOver_Sound != null) gameOver_Sound.play();
         break;
       case "check":
-        check_Sound.play();
+        if (check_Sound != null) check_Sound.play();
         break;
       default:
         console.log("Invalid sound type: " + type);
