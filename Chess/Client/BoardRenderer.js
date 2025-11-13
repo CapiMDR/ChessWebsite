@@ -266,12 +266,22 @@ function drawBotAnalysis(p) {
 
   for (let i = 0; i < pv.length; i++) {
     const move = pv[i];
-    const s = Move.startSqr(move);
-    const t = Move.targetSqr(move);
+    const startSquare = Move.startSqr(move);
+    const targetSquare = Move.targetSqr(move);
+
+    const targetFile = BoardUtil.squareToFile(targetSquare);
+    const targetRank = BoardUtil.squareToRank(targetSquare);
+
     const tVal = i / pv.length;
     const c = p.lerpColor(startC, endC, tVal);
     const thickness = p.map(i, 0, pv.length, 12, 2);
-    drawArrow(p, s, t, c, thickness);
+
+    drawArrow(p, startSquare, targetSquare, c, thickness);
+
+    p.fill(255);
+    p.noStroke();
+    p.textSize(18);
+    p.text(i + 1, squareSize * (targetFile + 1) - 20, squareSize * targetRank + squareSize * 0.25);
   }
 }
 
