@@ -99,6 +99,7 @@ io.on("connection", async (socket) => {
     switch (msg.type) {
       //Player signals readiness, join or create a new match
       case "ready": {
+        console.log("Player signalled ready");
         matchManager.onPlayerReady(socket, player, msg.matchID);
         break;
       }
