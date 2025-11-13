@@ -16,8 +16,8 @@ export class Match {
     this.blackTimer = new Timer(5, 3);
     this.engine.setTimers(this.whiteTimer, this.blackTimer);
 
-    this.colorAssignments = { [white]: null, [black]: null }; 
-    this.originalPlayers = { [white]: null, [black]: null }; 
+    this.colorAssignments = { [white]: null, [black]: null }; //Colors occupied by players currently in the match (can change before game starts if a player disconnects)
+    this.originalPlayers = { [white]: null, [black]: null }; //Players that started the game for handling reconnects
 
     this.whiteTimer.addEventListener("timeout", () => this.handleTimeout(white));
     this.blackTimer.addEventListener("timeout", () => this.handleTimeout(black));
