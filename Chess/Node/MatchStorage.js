@@ -8,44 +8,31 @@ export async function saveGameToDB(whitePlayer, blackPlayer, gameResult, pgn) {
         return;
     }
 
-    //Determining result as TEXT
-    let whiteResult = "Draw";
-    let blackResult = "Draw";
+   // Determine the absolute winner ('White', 'Black', or 'Draw')
+    let absoluteResult = "Draw"; 
 
-    if (didBlackWin(gameResult)) {
-        whiteResult = "Loss";
-        blackResult = "Win";
-    } else if (didWhiteWin(gameResult)) {
-        whiteResult = "Win";
-        blackResult = "Loss";
+    if (didWhiteWin(gameResult)) {
+        absoluteResult = "White";
+    } else if (didBlackWin(gameResult)) {
+        absoluteResult = "Black";
     }
 
     // Query pointing to the "matches" table
     const query = `
-        INSERT INTO matches (username, opponent, color, result, pgn, date) 
-        VALUES (?, ?, ?, ?, ?, NOW())
+        INSERT INTO matchs (whitePlayerId, blackPlayerID, result, pgn, date) 
+        VALUES (?, ?, ?, ?, NOW())
     `;
 
     try {
-        //Save record for white
+        //Save record for both white and black
         await connection.execute(query, [
-            whitePlayer.username,
-            blackPlayer.username,
-            'White',
-            whiteResult,
+            whitePlayer.id,
+            blackPlayer.id,
+            absoluteResult,
             pgn
         ]);
 
-        //Save record for black
-        await connection.execute(query, [
-            blackPlayer.username,
-            whitePlayer.username,
-            'Black',
-            blackResult,
-            pgn
-        ]);
-
-        console.log(`Game saved to 'matches' table: ${whitePlayer.username} vs ${blackPlayer.username}`);
+        console.log(`Game saved to 'matchs' table: WhiteID(${whitePlayer.id}) vs BlackID(${blackPlayer.id}). Result: ${absoluteResult}`);
     } catch (error) {
         console.error("Error saving game to DB:", error);
     }
