@@ -24,7 +24,7 @@ class MatchManager {
     //Assign player to the match room
     socket.join(match.ID);
     //Let the match handle readiness / color assignment / start
-    match.handlePlayerReady(socket, player);
+    match.onPlayerJoin(socket, player);
     //Record mapping of the player to their match
     this.assignPlayerToMatch(player.id, match.ID);
   }

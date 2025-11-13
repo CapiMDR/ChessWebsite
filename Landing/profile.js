@@ -51,7 +51,7 @@
     listElement.innerHTML = items
       .map(
         (game) => `
-        <div class="history-item" onclick="viewPGN(${game.id})">
+        <div class="history-item" onclick="viewPGN('${game.id}')">
           <div class="history-row">
             <div class="history-meta">
               <div class="opp">vs <strong>${game.opponent}</strong></div>
@@ -64,7 +64,7 @@
           </div>
           <div class="pgn" id="pgn-${game.id}">
             <p> ${game.pgn} </p>
-            <button class="btn-styled btn-small" type="button" onclick="event.stopPropagation(); analyzeGame(${game.id})">Analyze</button>
+            <button class="btn-styled btn-small" type="button" onclick="event.stopPropagation(); analyzeGame('${game.id}')">Analyze</button>
           </div>
         </div>
       `
