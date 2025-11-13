@@ -14,19 +14,19 @@ export class Match {
     this.blackTimer = new Timer(5, 3);
     this.engine.setTimers(this.whiteTimer, this.blackTimer);
 
-    this.colorAssignments = { [white]: null, [black]: null };
-    this.originalPlayers = { [white]: null, [black]: null };
+    this.colorAssignments = { [white]: null, [black]: null }; //Colors occupied by players currently in the match (can change before game starts if a player disconnects)
+    this.originalPlayers = { [white]: null, [black]: null }; //Players that started the game for handling reconnects
 
     this.whiteTimer.addEventListener("timeout", () => this.handleTimeout(white));
     this.blackTimer.addEventListener("timeout", () => this.handleTimeout(black));
   }
 
-  assignColor(playerId) {
+  assignColor(player) {
     //If this game has started, only allow the players who started it to get a color, otherwise assign spectator
     if (this.gameHasStarted()) {
       for (const color of [white, black]) {
-        if (this.originalPlayers[color] === playerId) {
-          this.colorAssignments[color] = playerId;
+        if (this.originalPlayers[color].id === player.id) {
+          this.colorAssignments[color] = player;
           console.log(`Original ${color === white ? "white" : "black"} reconnected`);
           return color;
         }
@@ -41,18 +41,22 @@ export class Match {
     if (available.length === 0) return "spectator";
 
     const assigned = available[Math.floor(Math.random() * available.length)];
-    this.colorAssignments[assigned] = playerId;
+    this.colorAssignments[assigned] = player;
     return assigned;
   }
 
-  handlePlayerReady(socket, playerId) {
-    const assignedColor = this.assignColor(playerId);
+  handlePlayerReady(socket, player) {
+    const assignedColor = this.assignColor(player);
     //Tell client which match they joined and as which color
     respondToClient(socket, { type: "joinMatch", matchID: this.ID, color: assignedColor });
 
     //Sync joining player's game to server's game if a reconnect
     if (this.gameHasStarted()) {
-      respondToClient(socket, { type: "startGame" });
+      respondToClient(socket, {
+        type: "startGame",
+        matchID: this.ID,
+        players: { white: this.colorAssignments[white], black: this.colorAssignments[black] },
+      });
       respondToClient(socket, { type: "syncGame", gameStatus: this.getGameStatus() });
       return;
     }
@@ -60,15 +64,20 @@ export class Match {
     //Start game when both colors are occupied
     if (this.gameIsReady()) {
       this.startGame();
-      sendToAllClients({ type: "startGame", matchID: this.ID });
+      sendToAllClients({
+        type: "startGame",
+        matchID: this.ID,
+        players: { white: this.colorAssignments[white], black: this.colorAssignments[black] },
+      });
     }
   }
 
   //If the game hasn't started, free up the color the player had
-  handleDisconnect(playerId) {
+  handleDisconnect(player) {
     if (this.gameHasStarted()) return;
     for (const color of [white, black]) {
-      if (this.colorAssignments[color] === playerId) {
+      if (!this.colorAssignments[color]) continue;
+      if (this.colorAssignments[color].id === player.id) {
         this.colorAssignments[color] = null;
       }
     }
@@ -83,7 +92,7 @@ export class Match {
   endGame(resignedPlayer = null) {
     const status = this.getGameStatus();
     if (resignedPlayer) {
-      const whiteResigned = this.originalPlayers[white] == resignedPlayer;
+      const whiteResigned = this.originalPlayers[white].id == resignedPlayer.id;
       status.gameResult = whiteResigned ? GameResult.whiteResigned : GameResult.blackResigned;
     }
     this.engine.timers[white].stop();

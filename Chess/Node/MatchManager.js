@@ -7,26 +7,26 @@ class MatchManager {
     this.playerToMatch = new Map(); //playerId -> gameId
   }
 
-  onPlayerReady(socket, playerID, matchID) {
+  onPlayerReady(socket, player, matchID) {
     let match;
-    if (this.isReconnecting(playerID)) {
+    if (this.isReconnecting(player.id)) {
       //If this client is reconnecting to an existing match
-      match = this.findMatchByPlayer(playerID);
-      console.log(`Player ${playerID} reconnected to match ${match.ID}`);
+      match = this.findMatchByPlayer(player.id);
+      console.log(`Player ${player.username} reconnected to match ${match.ID}`);
     } else {
       //Player is not reconnecting (no known match or old match has been deleted)
-      match = this.findNewMatch(socket, playerID, matchID);
+      match = this.findNewMatch(socket, player.id, matchID);
     }
 
     if (match == null) return;
 
-    console.log(`Player ${playerID} joining match ${match.ID}`);
+    console.log(`Player ${player.username} joining match ${match.ID}`);
     //Assign player to the match room
     socket.join(match.ID);
     //Let the match handle readiness / color assignment / start
-    match.handlePlayerReady(socket, playerID);
+    match.handlePlayerReady(socket, player);
     //Record mapping of the player to their match
-    this.assignPlayerToMatch(playerID, match.ID);
+    this.assignPlayerToMatch(player.id, match.ID);
   }
 
   findNewMatch(socket, playerID, matchID) {
@@ -73,17 +73,17 @@ class MatchManager {
     match.handleReceivedMove(move);
   }
 
-  onPlayerDisconnect(playerID) {
-    const match = this.findMatchByPlayer(playerID);
+  onPlayerDisconnect(player) {
+    const match = this.findMatchByPlayer(player.id);
     if (!match) return;
-    match.handleDisconnect(playerID);
+    match.handleDisconnect(player);
     //If the game hasn't started "forget" that this client ever joined this match, otherwise remember for rejoining
-    if (!match.gameHasStarted()) this.removePlayerFromMatch(playerID);
+    if (!match.gameHasStarted()) this.removePlayerFromMatch(player.id);
   }
 
-  onResignation(playerID, matchID) {
+  onResignation(player, matchID) {
     const match = this.getMatch(matchID);
-    match.endGame(playerID);
+    match.endGame(player);
   }
 
   createMatch() {

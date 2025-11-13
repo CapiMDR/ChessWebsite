@@ -8,12 +8,8 @@ let socket;
 let joinedMatchID; //The current match ID assigned to this client by the server
 
 export function startConnection() {
-  //Generate or retrieve unique player ID
-  let playerId = localStorage.getItem("playerId");
-  if (!playerId) {
-    playerId = crypto.randomUUID();
-    localStorage.setItem("playerId", playerId);
-  }
+  //Retrieve unique player ID
+  let playerId = window.uuid;
 
   //Connecting to server with unique player ID
   socket = io(`https://${host}:${port}`, { query: { playerId } });
