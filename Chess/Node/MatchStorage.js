@@ -19,7 +19,7 @@ export async function saveGameToDB(whitePlayer, blackPlayer, gameResult, pgn) {
 
     // Query pointing to the "matches" table
     const query = `
-        INSERT INTO matchs (whitePlayerId, blackPlayerID, result, pgn, date) 
+        INSERT INTO matches (whitePlayerId, blackPlayerID, result, pgn, date) 
         VALUES (?, ?, ?, ?, NOW())
     `;
 
@@ -32,7 +32,7 @@ export async function saveGameToDB(whitePlayer, blackPlayer, gameResult, pgn) {
             pgn
         ]);
 
-        console.log(`Game saved to 'matchs' table: WhiteID(${whitePlayer.id}) vs BlackID(${blackPlayer.id}). Result: ${absoluteResult}`);
+        console.log(`Game saved to 'matches' table: WhiteID(${whitePlayer.id}) vs BlackID(${blackPlayer.id}). Result: ${absoluteResult}`);
     } catch (error) {
         console.error("Error saving game to DB:", error);
     }
