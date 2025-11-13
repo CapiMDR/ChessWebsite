@@ -10,9 +10,12 @@ import { networkEvents } from "./ClientNetwork.js";
 
 // ====== Sizing Constants ======
 const windowHeight = window.innerHeight;
-const UIHorizontalSize = windowHeight * 0.6 * 0.8;
-const UIVerticalSize = windowHeight * 0.9 * 0.8;
-const squareSize = UIVerticalSize / 8;
+const UIHorizontalSize = windowHeight * 0.4;
+const UIVerticalSize = windowHeight * 0.5;
+const innerUIHorizontalSize = UIHorizontalSize * 0.85;
+const innerUIVerticalSize = UIVerticalSize * 0.85;
+
+const pieceDrawSize = UIVerticalSize / 8;
 const UIXCenter = UIHorizontalSize * 0.5;
 const UIYCenter = UIVerticalSize * 0.5;
 
@@ -72,7 +75,7 @@ function drawUI(p) {
   setShadow(p);
   p.rectMode(p.CENTER);
   p.fill(75);
-  p.rect(UIXCenter, UIYCenter, UIHorizontalSize * 0.85, UIVerticalSize * 0.85);
+  p.rect(UIXCenter, UIYCenter, innerUIHorizontalSize, innerUIVerticalSize);
   unsetEffects(p);
 
   drawUIText(p, engine);
@@ -86,28 +89,29 @@ function drawUIText(p, engine) {
   p.textSize(16);
   p.textAlign(p.CENTER);
 
-  // Game status
+  //Game status
   if (engine.result === GameResult.inProgress) {
     p.text(engine.clrToMove === white ? "White to move" : "Black to move", UIXCenter, p.height / 2);
   } else {
     p.text(engine.result, UIXCenter, p.height / 2);
   }
 
-  // Player names
-  const nameOffset = 75;
+  //Player names
+  const nameOffset = innerUIVerticalSize * 0.15;
   const whiteY = flipBoard ? p.height / 4 - nameOffset : (3 * p.height) / 4 + nameOffset;
   const blackY = flipBoard ? (3 * p.height) / 4 + nameOffset : p.height / 4 - nameOffset;
 
-  if (playerNames.white) p.text(playerNames.white, UIXCenter, whiteY);
-  if (playerNames.black) p.text(playerNames.black, UIXCenter, blackY);
+  p.fill(150);
+  if (playerNames.white) p.text(playerNames.white, UIXCenter * 0.3, whiteY);
+  if (playerNames.black) p.text(playerNames.black, UIXCenter * 0.3, blackY);
 }
 
 function drawUITimers(p, engine) {
   p.textAlign(p.CENTER, p.CENTER);
   p.rectMode(p.CENTER);
 
-  const timerWidth = UIHorizontalSize * 0.3;
-  const timerHeight = UIHorizontalSize * 0.15;
+  const timerWidth = UIHorizontalSize * 0.4;
+  const timerHeight = UIHorizontalSize * 0.2;
 
   const whiteY = flipBoard ? p.height / 4 : (3 * p.height) / 4;
   const blackY = flipBoard ? (3 * p.height) / 4 : p.height / 4;
@@ -137,7 +141,7 @@ function drawUITimers(p, engine) {
 
 function drawCapturedPieces(p, engine) {
   const valueDifference = engine.whiteMaterial - engine.blackMaterial;
-  const drawSize = squareSize * 0.5;
+  const drawSize = pieceDrawSize * 0.5;
   const horizontalDrawStart = UIHorizontalSize * 0.15;
   const spacing = 12;
 
@@ -161,7 +165,7 @@ function drawCapturedPieces(p, engine) {
     }
   }
 
-  p.fill(255);
+  p.fill(150);
   p.textSize(12);
   p.textAlign(p.CENTER);
   if (valueDifference < 0) {
