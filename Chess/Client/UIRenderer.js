@@ -72,7 +72,7 @@ function drawUI(p) {
   setShadow(p);
   p.rectMode(p.CENTER);
   p.fill(75);
-  p.rect(UIXCenter, UIYCenter, UIHorizontalSize * 0.8, UIVerticalSize * 0.8);
+  p.rect(UIXCenter, UIYCenter, UIHorizontalSize * 0.85, UIVerticalSize * 0.85);
   unsetEffects(p);
 
   drawUIText(p, engine);
@@ -143,8 +143,8 @@ function drawCapturedPieces(p, engine) {
 
   let whiteOffset = 0;
   let blackOffset = 0;
-  const whiteDrawY = flipBoard ? UIVerticalSize * 0.95 : UIVerticalSize * 0.05;
-  const blackDrawY = flipBoard ? UIVerticalSize * 0.05 : UIVerticalSize * 0.95;
+  const whiteDrawY = flipBoard ? UIVerticalSize * 0.96 : UIVerticalSize * 0.04;
+  const blackDrawY = flipBoard ? UIVerticalSize * 0.04 : UIVerticalSize * 0.96;
 
   p.imageMode(p.CENTER);
   for (let piece of Piece.indeces) {
