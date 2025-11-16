@@ -33,12 +33,11 @@
         window.movesList = <?php echo json_encode($_POST['pgn']); ?>;
       <?php endif; ?>
     </script>
-    <script type="module" src="./UIController.js"></script>
   </head>
   <body>
-    <?php include('../../Components/backgroundArt.html'); ?>
+    <?php include('../../Widgets/backgroundArt.html'); ?>
     <div id="container">
-      <?php include('../../Components/navigationBar.html'); ?>
+      <?php include('../../Widgets/navigationBar.html'); ?>
       <div id="gameRow">
         <div id="leftColumn">
           <div id="movesContainer">
@@ -60,25 +59,28 @@
             <?php endif; ?>
           </div>
         </div>
-        <div id="boardContainer">
-          <div id="overlay">
-            <?php if ($mode === 'online'): ?>
-              <div class="loader-container">
-                <div class="loader"></div>
-                <p>Waiting for another player to join...</p>
-              </div>
-            <?php else: ?>
-              <button class="btn-styled-red btn-larger" id="playBTN" data-action="startGame">
-                <span class="material-icons" style="font-size: 3rem;">play_arrow</span>
-              </button>
-            <?php endif; ?>
+      <div id="boardContainer">
+        <div id="overlay">
+          <?php if ($mode === 'online'): ?>
+          <div class="loader-container">
+              <div class="loader"></div>
+              <p>Waiting for another player to join...</p>
           </div>
+          <?php elseif ($mode === 'local'): ?>
+            <button class="btn-styled-red btn-larger" id="playBTN" data-action="startGame">
+                <span class="material-icons" style="font-size: 3rem;">play_arrow</span>
+            </button>
+          <?php elseif ($mode === 'bot'): ?>
+            <?php include('./gameOptions.html'); ?>
+          <?php endif; ?>
         </div>
+      </div>
         <div id="UIContainer"></div>
       </div>
     </div>
     <main></main>
-    <script type="module" src="./MainRenderer.js"></script>
+    <script type="module" src="./Renderers/MainRenderer.js"></script>
+    <script type="module" src="./Controllers/UIController.js"></script>
     <script type="module" src="./Input.js"></script>
   </body>
 </html>

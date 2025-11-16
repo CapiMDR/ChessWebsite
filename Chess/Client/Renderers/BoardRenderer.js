@@ -3,17 +3,18 @@
  * Uses shared input state from GameState.js
  */
 
-import { BBUtil } from "../Shared/BBUtil.js";
-import { Piece } from "../Shared/Piece.js";
-import { Move } from "../Shared/Move.js";
-import { BoardUtil } from "../Shared/BoardUtil.js";
-import { white, pawn, knight, bishop, rook, queen, king, enPassantFlag } from "../Shared/Constants.js";
-import { GameResult } from "../Shared/Engine.js";
-import { clientColor, flipBoard } from "./ClientController.js";
-import { gameController, engine, gameEvents } from "./GameController.js";
-import { botEvents } from "./BotController.js";
-import { networkEvents } from "./ClientNetwork.js";
-import { selectedSquare, dragging, onPageLoaded } from "./ClientController.js";
+import { BBUtil } from "../../Shared/BBUtil.js";
+import { Piece } from "../../Shared/Piece.js";
+import { Move } from "../../Shared/Move.js";
+import { BoardUtil } from "../../Shared/BoardUtil.js";
+import { white, pawn, knight, bishop, rook, queen, king, enPassantFlag } from "../../Shared/Constants.js";
+import { GameResult } from "../../Shared/Engine.js";
+import { clientState } from "../State/ClientState.js";
+import { gameController, engine, gameEvents } from "../Controllers/GameController.js";
+import { botEvents } from "../Controllers/BotController.js";
+import { networkEvents } from "../Network/ClientNetwork.js";
+import { onPageLoaded } from "../Controllers/MainController.js";
+import { selectedSquare, dragging } from "../State/InputState.js";
 
 // ====== Constants ======
 const windowHeight = window.innerHeight;
@@ -123,7 +124,7 @@ function drawBoard(p) {
       p.rect(drawFile * squareSize, drawRank * squareSize, squareSize, squareSize);
 
       p.fill(BoardUtil.isLightSquare(f, r) ? dark : light);
-      if (!flipBoard) {
+      if (!clientState.flipBoard) {
         if (f === 0) p.text(8 - r, 10, squareSize * r + squareSize * 0.25);
         if (r === 7) p.text(String.fromCharCode(97 + f), squareSize * f + squareSize * 0.82, p.height - 10);
       } else {
@@ -202,7 +203,7 @@ function highlightSquares(p, engine, selectedClr, moveClr) {
 }
 
 function drawLegalMoves(p, engine, clr) {
-  if ((gameController.gameMode === "online" || gameController.gameMode === "bot") && clientColor !== engine.clrToMove) return;
+  if ((gameController.gameMode === "online" || gameController.gameMode === "bot") && clientState.color !== engine.clrToMove) return;
   if (engine.result !== GameResult.inProgress || engine.isUndoingMoves()) return;
   if (selectedSquare == null) return;
 
@@ -366,9 +367,9 @@ function updateBotEvaluation(botResult) {
 }
 
 function adjustFile(file) {
-  return flipBoard ? 7 - file : file;
+  return clientState.flipBoard ? 7 - file : file;
 }
 
 function adjustRank(rank) {
-  return flipBoard ? 7 - rank : rank;
+  return clientState.flipBoard ? 7 - rank : rank;
 }

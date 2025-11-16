@@ -89,3 +89,96 @@ canvas {
   width: 250px;
   border-radius: 1%;
 }
+
+#gameOptionsPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 35vh;
+  width: 300px;
+  gap: 1%;
+  color: #eaeaea;
+  z-index: 12;
+}
+
+#colorPicker {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.muted {
+  color: rgba(235, 235, 235, 0.6);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+#difficultyPicker {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+#colorPicker {
+  display: flex;
+  align-items: center;
+}
+
+.options-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.option-btn {
+  min-width: 56px;
+  height: 56px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.option-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.option-btn.active {
+  background: rgba(237, 34, 93, 0.9);
+  color: #1a1a1a;
+  box-shadow: 0 8px 20px rgba(237, 34, 93, 0.3);
+}
+
+.go-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 3rem;
+  cursor: pointer;
+  width: 50px;
+  height: 50px;
+  background: rgba(216, 216, 216, 0.205);
+  transition: all 0.2s;
+}
+
+.go-btn:hover {
+  background: rgba(237, 34, 93, 0.9);
+}

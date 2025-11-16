@@ -1,112 +1,15 @@
-/* 🐐 CapraStar - The Greatest of All Tactics 🐐 */
-/* This bot will for sure checkmaaaaate you */
-
-//Web worker script for the AI to run in parallel to the UI
-
-import { Move } from "../Shared/Move.js";
-import { white, black, none, pawn, knight, bishop, rook, queen, king } from "../Shared/Constants.js";
-import { MoveGenerator } from "../Shared/MoveGenerator.js";
-import { Board } from "../Shared/Board.js";
 import { BoardUtil } from "../Shared/BoardUtil.js";
 import { BBUtil } from "../Shared/BBUtil.js";
 import { Piece } from "../Shared/Piece.js";
+import { Move } from "../Shared/Move.js";
+import { white, black, none, pawn, knight, bishop, rook, queen, king } from "../Shared/Constants.js";
+import { MoveGenerator } from "../Shared/MoveGenerator.js";
 
-let capraStar = null;
-const bookPath = "./Book.txt";
-let book = {};
-
-onmessage = function (e) {
-  const { type, fen } = e.data;
-  let bestMove;
-  switch (type) {
-    case "init":
-      initBot();
-      break;
-    case "search":
-      if (!capraStar) initBot();
-
-      bestMove = search(fen, e.data.repetitionHistory);
-      postMessage({
-        type: "result",
-        bestMove: bestMove,
-        evaluation: capraStar.evaluation,
-      });
-      break;
-    case "evaluate":
-      if (!capraStar) initBot();
-
-      const start = performance.now();
-      bestMove = search(fen, e.data.repetitionHistory);
-      const end = performance.now();
-      const timeTaken = end - start;
-
-      postMessage({
-        type: "evaluation",
-        bestMove: bestMove,
-        evaluation: capraStar.evaluation,
-        pv: capraStar.principalVariation,
-        timeTaken: timeTaken,
-      });
-      break;
-  }
-};
-
-//Initialize bot with its opening book (async for fetching the txt file)
-async function initBot() {
-  capraStar = new CapraStar(new Board());
-  book = await loadBookMoveEntries(bookPath);
-  capraStar.openingBook = book;
-}
-
-function search(fen, repetitionHistory) {
-  //Empty CapraStar's copy of the board
-  capraStar.board.init();
-  //Reconstruct current board from FEN
-  capraStar.board.fillBoard(fen);
-  capraStar.positionHistory = repetitionHistory;
-
-  const moves = capraStar.moveGen.generateMoves(capraStar.board);
-  //Get best move
-  const bestMove = capraStar.getBestMove(moves);
-  return bestMove;
-}
-
-//Initializes an opening repertoire for the bots to play
-async function loadBookMoveEntries(filePath) {
-  // Read the entire book file
-  const response = await fetch(filePath);
-  if (!response.ok) {
-    console.error(`Failed to load book file: ${response.status} ${response.statusText}`);
-    return {};
-  }
-
-  const plainText = await response.text();
-
-  // Split into lines and clean up
-  const lines = plainText
-    .trim()
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-  const book = {};
-  let currentFEN = null;
-
-  for (const l of lines) {
-    if (l.startsWith("pos ")) {
-      currentFEN = l.substring(4).trim();
-      if (!book[currentFEN]) {
-        book[currentFEN] = [];
-      }
-    } else if (currentFEN) {
-      // It's a move line, add it to the current FEN's move list
-      book[currentFEN].push(l);
-    }
-  }
-  return book;
-}
+/* 🐐 CapraStar - The Greatest of All Tactics 🐐 */
+/* This bot will for sure checkmaaaaate you */
 
 //CapraStar bot implementation
-class CapraStar {
+export class CapraStar {
   constructor(board) {
     this.board = board;
     this.moveGen = new MoveGenerator();
@@ -121,7 +24,9 @@ class CapraStar {
     //Stack to keep track of position seen in this line to detect draws by repetition
     this.positionHistory = [];
     //Map from FEN -> list of book moves
-    let openingBook = {};
+    this.openingBook = {};
+    //Difficulty level of the bot (1 easiest - 3 hardest). Gets set on initialization but 3 by default
+    this.difficulty = 3;
   }
 
   //Receives a board position and returns a random book move
@@ -139,6 +44,14 @@ class CapraStar {
 
   //Receives list of legal moves and returns the best one
   getBestMove(legalMoves) {
+    //postMessage(`Current difficulty ${this.difficulty}`);
+    //Return random move if easiest difficulty
+    if (this.difficulty == 1) {
+      this.bestMoveFound = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+      this.evaluation = 0;
+      return this.bestMoveFound;
+    }
+
     //Attempting to get a book move without searching
     const bookMove = this.getBookMove(this.board);
 
@@ -146,10 +59,12 @@ class CapraStar {
 
     const piecesCount = this.board.pieceCounts[white][0] + this.board.pieceCounts[black][0];
 
-    let maxDepth;
+    let maxDepth; //Max depth at which bot is allowed to look into when pieces count > 5
     if (piecesCount > 5) maxDepth = 5;
     else if (piecesCount > 3) maxDepth = 6;
     else maxDepth = 8;
+
+    if (this.difficulty == 2) maxDepth = 1; //Overwrite depth on easier difficulties
 
     //Iterative deepening. Performing a search from a depth of 1 all the way up to a depth of maxDepth
     //This is done to keep track of the best moves at every depth and look at those first on the next depth to prune more branches
@@ -207,7 +122,13 @@ class CapraStar {
 
     //Base case when depth = 0, return the evaluation gotten from quiescence search and an empty principal variation
     if (depth == 0) {
-      const qScore = this.quiescence(alph, beta);
+      let qScore;
+      if (this.difficulty == 2) {
+        //If on the easier difficulty, don't use quiescence search
+        qScore = this.evaluate(this.board);
+      } else {
+        qScore = this.quiescence(alph, beta);
+      }
       return { score: qScore, pv: [] };
     }
 

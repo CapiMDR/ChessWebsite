@@ -7,11 +7,12 @@ import { Move } from "../Shared/Move.js";
 import { GameResult } from "../Shared/Engine.js";
 import { BoardUtil } from "../Shared/BoardUtil.js";
 import { knight, bishop, rook, queen, promoteKnightFlag, promoteBishopFlag, promoteRookFlag, promoteQueenFlag } from "../Shared/Constants.js";
-import { registerMove, flipBoard } from "./ClientController.js";
-import { engine } from "./GameController.js";
-import { squareSize, promotionMenu, boardSize } from "./BoardRenderer.js";
-import { boardP5 } from "./MainRenderer.js";
-import { selectedSquare, selectToggle, dragging, setSelectedSquare, toggleSelect, resetSelection, setDragging } from "./ClientController.js";
+import { registerMove } from "./Controllers/MainController.js";
+import { clientState } from "./State/ClientState.js";
+import { engine } from "./Controllers/GameController.js";
+import { squareSize, promotionMenu, boardSize } from "./Renderers/BoardRenderer.js";
+import { boardP5 } from "./Renderers/MainRenderer.js";
+import { selectedSquare, selectToggle, dragging, setSelectedSquare, toggleSelect, resetSelection, setDragging } from "./State/InputState.js";
 
 // --- Attach input handlers to the board's p5 instance ---
 boardP5.touchStarted = function () {
@@ -78,8 +79,8 @@ function searchMoves(moveFrom, moveTo) {
     if (moveStartSqr !== moveFrom || moveTargetSqr !== moveTo) continue;
 
     if (Move.isPromotion(move)) {
-      const x = flipBoard ? boardSize - moveToFile * squareSize - squareSize : moveToFile * squareSize;
-      const y = flipBoard ? boardSize - moveToRank * squareSize - squareSize : moveToRank * squareSize;
+      const x = clientState.flipBoard ? boardSize - moveToFile * squareSize - squareSize : moveToFile * squareSize;
+      const y = clientState.flipBoard ? boardSize - moveToRank * squareSize - squareSize : moveToRank * squareSize;
 
       promotionMenu.active = true;
       promotionMenu.x = x;
@@ -100,8 +101,8 @@ function handlePromotionClick(file, rank) {
   const menuFile = Math.floor(x / squareSize);
   const menuRank = Math.floor(y / squareSize);
 
-  const adjustedFile = flipBoard ? 7 - file : file;
-  const adjustedRank = flipBoard ? 7 - rank : rank;
+  const adjustedFile = clientState.flipBoard ? 7 - file : file;
+  const adjustedRank = clientState.flipBoard ? 7 - rank : rank;
 
   if (adjustedFile === menuFile) {
     const optionIndex = adjustedRank - menuRank;
@@ -139,8 +140,8 @@ function getCurrentMouseCoords(x, y) {
   const file = Math.floor(x / squareSize);
   const rank = Math.floor(y / squareSize);
 
-  const realFile = flipBoard ? 7 - file : file;
-  const realRank = flipBoard ? 7 - rank : rank;
+  const realFile = clientState.flipBoard ? 7 - file : file;
+  const realRank = clientState.flipBoard ? 7 - rank : rank;
 
   return {
     currentFile: realFile,

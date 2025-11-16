@@ -2,11 +2,11 @@
  * Handles all local game logic (starting, ending, move-making)
  */
 
-import { Move } from "../Shared/Move.js";
-import { Engine, GameResult } from "../Shared/Engine.js";
-import { Timer } from "../Shared/Timer.js";
-import { white, black } from "../Shared/Constants.js";
-import { networkEvents } from "./ClientNetwork.js";
+import { Move } from "../../Shared/Move.js";
+import { Engine, GameResult } from "../../Shared/Engine.js";
+import { Timer } from "../../Shared/Timer.js";
+import { white, black } from "../../Shared/Constants.js";
+import { networkEvents } from "../Network/ClientNetwork.js";
 import { botEvents } from "./BotController.js";
 
 //Listen for bot moves and play them locally
@@ -73,6 +73,15 @@ export class GameController {
     //Handle local game end (only when not playing online as that should stay server-authoritative)
     if (this.gameMode == "online") return;
     if (this.gameIsOver()) this.handleGameEnd(this.engine.result);
+  }
+
+  //Whether the client game should register moves played locally
+  canAcceptLocalMove() {
+    //Don't register any move locally if undoing moves
+    if (this.engine.isUndoingMoves()) return false;
+    //Don't register moves if game hasn't started or is over
+    if (!this.gameInProgress()) return false;
+    return true;
   }
 
   gameInProgress() {

@@ -1,12 +1,12 @@
 /**
  * Handles UI canvas (timers, player names, captured pieces, etc)
  */
-import { Piece } from "../Shared/Piece.js";
-import { white, black, pawn, knight, bishop, rook, queen, king } from "../Shared/Constants.js";
-import { GameResult } from "../Shared/Engine.js";
-import { flipBoard } from "./ClientController.js";
-import { engine } from "./GameController.js";
-import { networkEvents } from "./ClientNetwork.js";
+import { Piece } from "../../Shared/Piece.js";
+import { white, black, pawn, knight, bishop, rook, queen, king } from "../../Shared/Constants.js";
+import { GameResult } from "../../Shared/Engine.js";
+import { clientState } from "../State/ClientState.js";
+import { engine } from "../Controllers/GameController.js";
+import { networkEvents } from "../Network/ClientNetwork.js";
 
 // ====== Sizing Constants ======
 const windowHeight = window.innerHeight;
@@ -98,8 +98,8 @@ function drawUIText(p, engine) {
 
   //Player names
   const nameOffset = innerUIVerticalSize * 0.15;
-  const whiteY = flipBoard ? p.height / 4 - nameOffset : (3 * p.height) / 4 + nameOffset;
-  const blackY = flipBoard ? (3 * p.height) / 4 + nameOffset : p.height / 4 - nameOffset;
+  const whiteY = clientState.flipBoard ? p.height / 4 - nameOffset : (3 * p.height) / 4 + nameOffset;
+  const blackY = clientState.flipBoard ? (3 * p.height) / 4 + nameOffset : p.height / 4 - nameOffset;
 
   p.fill(150);
   if (playerNames.white) p.text(playerNames.white, UIXCenter * 0.3, whiteY);
@@ -113,8 +113,8 @@ function drawUITimers(p, engine) {
   const timerWidth = UIHorizontalSize * 0.4;
   const timerHeight = UIHorizontalSize * 0.2;
 
-  const whiteY = flipBoard ? p.height / 4 : (3 * p.height) / 4;
-  const blackY = flipBoard ? (3 * p.height) / 4 : p.height / 4;
+  const whiteY = clientState.flipBoard ? p.height / 4 : (3 * p.height) / 4;
+  const blackY = clientState.flipBoard ? (3 * p.height) / 4 : p.height / 4;
 
   // --- White Timer ---
   let opacity = engine.clrToMove === white ? 255 : 100;
@@ -147,8 +147,8 @@ function drawCapturedPieces(p, engine) {
 
   let whiteOffset = 0;
   let blackOffset = 0;
-  const whiteDrawY = flipBoard ? UIVerticalSize * 0.96 : UIVerticalSize * 0.04;
-  const blackDrawY = flipBoard ? UIVerticalSize * 0.04 : UIVerticalSize * 0.96;
+  const whiteDrawY = clientState.flipBoard ? UIVerticalSize * 0.96 : UIVerticalSize * 0.04;
+  const blackDrawY = clientState.flipBoard ? UIVerticalSize * 0.04 : UIVerticalSize * 0.96;
 
   p.imageMode(p.CENTER);
   for (let piece of Piece.indeces) {
