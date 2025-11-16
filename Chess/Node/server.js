@@ -66,57 +66,89 @@ let onlineUsers = 0;
 //Socket actions
 io.on("connection", async (socket) => {
   const playerID = socket.handshake.query.playerId;
+  let player = null;
+  let isPlayerLoaded = false;
+
+  const earlyMessageQueue = []; //Store messages received early
+
+  console.log(`Socket connected: ${socket.id}, playerId: ${playerID}`);
+
+  //Register listeners
+  socket.on("message", (msg) => {
+    if (!isPlayerLoaded) {
+      //Player data wasn't loaded in time from the database, queue their "ready" message until player info is collected
+      console.log("Queued early message:", msg);
+      earlyMessageQueue.push(msg);
+      return;
+    }
+    processMessage(msg);
+  });
+
+  socket.on("disconnect", () => {
+    if (player) {
+      onlineUsers--;
+      console.log(`Player ${player.username} disconnected (socket: ${socket.id}). Online: ${onlineUsers}`);
+      matchManager.onPlayerDisconnect(player);
+    } else {
+      console.log(`Socket ${socket.id} disconnected before player loaded.`);
+    }
+  });
+
+  //Messages received from clients
+  function processMessage(msg) {
+    switch (msg.type) {
+      case "ready":
+        console.log("Player signalled ready");
+        matchManager.onPlayerReady(socket, player, msg.matchID);
+        break;
+
+      case "move":
+        matchManager.onMoveReceived(msg.move, msg.matchID);
+        break;
+
+      case "resignation":
+        matchManager.onResignation(player, msg.matchID);
+        break;
+
+      default:
+        console.log(`Invalid message type from client: ${msg.type}`);
+        respondToClient(socket, { type: "error", message: "Invalid message type" });
+    }
+  }
+
   if (!playerID) {
     console.log(`Connection without playerId rejected`);
     socket.disconnect();
     return;
   }
 
-  let player;
+  //Fetching player details from database
   try {
     player = await getPlayerById(playerID);
+
     if (!player) {
       console.log(`No player found with ID: ${playerID}`);
       socket.disconnect();
       return;
+    }
+
+    isPlayerLoaded = true;
+    onlineUsers++;
+
+    console.log(`Player ${player.username} connected (socket: ${socket.id}). Online: ${onlineUsers}`);
+
+    //If this client messaged "ready" before database connection, unqueue their message and process it
+    if (earlyMessageQueue.length > 0) {
+      console.log(`Processing ${earlyMessageQueue.length} queued message(s)...`);
+      for (const queuedMsg of earlyMessageQueue) {
+        processMessage(queuedMsg);
+      }
     }
   } catch (err) {
     console.error("Database error fetching player:", err);
     socket.disconnect();
     return;
   }
-
-  onlineUsers++;
-  console.log(`Player ${player.username} connected (socket: ${socket.id}). Online: ${onlineUsers}`);
-
-  socket.on("disconnect", () => {
-    onlineUsers--;
-    console.log(`Player ${player.username} disconnected (socket: ${socket.id}). Online: ${onlineUsers}`);
-    matchManager.onPlayerDisconnect(player);
-  });
-
-  socket.on("message", (msg) => {
-    switch (msg.type) {
-      //Player signals readiness, join or create a new match
-      case "ready": {
-        console.log("Player signalled ready");
-        matchManager.onPlayerReady(socket, player, msg.matchID);
-        break;
-      }
-      //Player makes a move, validate legality and broadcast to all other clients on that room
-      case "move": {
-        matchManager.onMoveReceived(msg.move, msg.matchID);
-        break;
-      }
-      case "resignation": {
-        matchManager.onResignation(player, msg.matchID);
-        break;
-      }
-      default:
-        console.log(`Invalid message type from client: ${msg.type}`);
-        respondToClient(socket, { type: "error", message: "Invalid message type" });
-    }
-  });
 });
 
 //Send a message to all clients in a specific match (room)

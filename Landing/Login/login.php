@@ -24,8 +24,8 @@ if (isset($_SESSION['user'])){
   </head>
 
   <body>
-    <?php include('../../Components/backgroundArt.html'); ?>
-    <?php include('../../Components/popUp.html'); ?>
+    <?php include('../../Widgets/backgroundArt.html'); ?>
+    <?php include('../../Widgets/popUp.html'); ?>
     <div id="container" class="login-container">
       <div class="login-box styledBox">
         <form id="loginForm" class="login-form" onsubmit="authenticateAccount(event)">

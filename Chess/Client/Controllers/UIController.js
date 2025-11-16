@@ -2,26 +2,24 @@
  * Handles all non-board-drawing (DOM elements), sounds and UI related functions
  */
 
-import { Move } from "../Shared/Move.js";
-import { Piece } from "../Shared/Piece.js";
-import { engine } from "./GameController.js";
-import { none, enPassantFlag, castleFlag } from "../Shared/Constants.js";
+import { Move } from "../../Shared/Move.js";
+import { Piece } from "../../Shared/Piece.js";
+import { none, enPassantFlag, castleFlag } from "../../Shared/Constants.js";
 import { botEvents } from "./BotController.js";
-import { gameController, gameEvents } from "./GameController.js";
-import { resignGame, getHint } from "./ClientController.js";
-import { capture_Sound, move_Sound, check_Sound, gameOver_Sound, start_Sound, castle_Sound } from "./BoardRenderer.js";
+import { gameController, gameEvents, engine } from "./GameController.js";
+import { resignGame, getHint } from "./MainController.js";
+import { capture_Sound, move_Sound, check_Sound, gameOver_Sound, start_Sound, castle_Sound } from "../Renderers/BoardRenderer.js";
 
 export class UIController {
   handleGameStart() {
-    this.playSound("Start");
     document.getElementById("overlay").style.display = "none"; //Disabling shadow over canvas
-
     const resignBtn = document.getElementById("resignBTN");
     if (resignBtn) {
       resignBtn.classList.remove("btn-styled-disabled");
       resignBtn.classList.add("btn-styled");
       resignBtn.classList.add("scalable");
     }
+    this.playSound("Start");
   }
 
   handleGameEnd() {

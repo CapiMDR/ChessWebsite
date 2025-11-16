@@ -19,8 +19,8 @@
     <meta charset="utf-8" />
   </head>
   <body>
-    <?php include('../Components/backgroundArt.html'); ?>
-    <?php include('../Components/navigationBar.html'); ?>
+    <?php include('../Widgets/backgroundArt.html'); ?>
+    <?php include('../Widgets/navigationBar.html'); ?>
     <div class="profile-container">   
         <div id="profileSquare" class="styledBox">
             <?php $user = htmlspecialchars($_SESSION['user'])?>

@@ -25,9 +25,9 @@
     </script>
   </head>
   <body>
-    <?php include('../Components/backgroundArt.html'); ?>
+    <?php include('../Widgets/backgroundArt.html'); ?>
     <div id="container">
-      <?php include('../Components/navigationBar.html'); ?>
+      <?php include('../Widgets/navigationBar.html'); ?>
       <div id="menuContainer">
         <div id="leftColumn" class="styledBox">
           <div id="menuBTNS">
@@ -48,8 +48,17 @@
             </form>
           </div>
         </div>
-        <div id="middleContainer">
-          <button class="btn-styled-red btn-larger" id="playBTN">
+        <div id="middleContainer" style="position: relative; display: inline-block;">
+          <!-- Clipped bottom image -->
+          <div id="circleGlow">
+            <img src="../Assets/Images/RadialImage.png" class="spinnable" style="width: 98%; height: auto;">
+          </div>
+
+          <!-- Middle image -->
+          <img src="../Assets/Images/MainImage.png" style="width: 98%; height: auto; position: relative; z-index: 2;">
+
+          <!-- Top button -->
+          <button class="btn-styled-red btn-larger img-btn" id="playBTN" onclick="setMode('online')">
             <span class="material-icons" style="font-size: 3rem;">play_arrow</span>
           </button>
         </div>

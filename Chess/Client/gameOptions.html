@@ -1,0 +1,61 @@
+<div id="gameOptionsPanel" class="styledBox">
+  <p class="muted">Choose difficulty and color</p>
+  <div id="difficultyPicker">
+    <h4>Difficulty</h4>
+    <div id="difficultyBTNS" class="options-row" role="tablist" aria-label="Difficulty">
+      <button class="option-btn" data-group="difficulty" data-value="1">1</button>
+      <button class="option-btn" data-group="difficulty" data-value="2">2</button>
+      <button class="option-btn" data-group="difficulty" data-value="3">3</button>
+    </div>
+  </div>
+  <div id="colorPicker">
+    <h4>Color</h4>
+    <div id="colorBTNS" class="options-row" role="tablist" aria-label="Color">
+      <button class="option-btn" data-group="color" data-value="white"><span>♔</span> White</button>
+      <button class="option-btn" data-group="color" data-value="black"><span>♚</span> Black</button>
+      <button class="option-btn" data-group="color" data-value="random"><span>?</span> Random</button>
+    </div>
+  </div>
+  <button class="go-btn"><span class="material-icons" data-action="startGame">play_arrow</span></button>
+</div>
+
+<script>
+  /*Game options are stored as a map:
+    window.gameOptions['difficulty'] = 1/2/3
+    window.gameOptions['color'] = white/black
+  */
+
+  //Option button group toggle behavior
+  (function () {
+    const buttons = document.querySelectorAll(".option-btn");
+    if (!buttons) return;
+    buttons.forEach((btn, idx) => {
+      btn.addEventListener("click", () => {
+        const group = btn.dataset.group;
+        //Removing active class from every unselected button of the group
+        document.querySelectorAll(`.option-btn[data-group="${group}"]`).forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active"); //Adding active class for visual flair when selected
+
+        //Store selected option on window for easy access by game code
+        window.gameOptions = window.gameOptions || {};
+        window.gameOptions[group] = btn.dataset.value;
+      });
+    });
+
+    //Set the first element of each group (difficulty & color) as default if none are selected
+    const difficultyGroup = document.querySelectorAll('.option-btn[data-group="difficulty"]');
+    if (difficultyGroup.length && !document.querySelector('.option-btn[data-group="difficulty"].active')) {
+      difficultyGroup[0].classList.add("active");
+
+      window.gameOptions = window.gameOptions || {};
+      window.gameOptions["difficulty"] = difficultyGroup[0].dataset.value;
+    }
+    const colorGroup = document.querySelectorAll('.option-btn[data-group="color"]');
+    if (colorGroup.length && !document.querySelector('.option-btn[data-group="color"].active')) {
+      colorGroup[0].classList.add("active");
+      window.gameOptions = window.gameOptions || {};
+
+      window.gameOptions["color"] = colorGroup[0].dataset.value;
+    }
+  })();
+</script>

@@ -2,16 +2,19 @@
  * Handles all communication with the web worker script for the bot (CapraStar)
  */
 
+import { gameController } from "./GameController.js";
+
 export class BotController {
   constructor() {
-    this.capraStar = new Worker("../Bot/CapraStar.js", { type: "module" });
+    this.capraStar = new Worker("../CapraStar/CapraWorker.js", { type: "module" });
   }
 
-  initializeBot() {
-    this.capraStar.postMessage({ type: "init" });
+  initializeBot(difficulty) {
+    this.capraStar.postMessage({ type: "init", difficulty: difficulty });
     this.capraStar.onmessage = (e) => {
       switch (e.data.type) {
         case "result":
+          if (!gameController.gameInProgress()) return; //If game ended in any way ignore any bot move
           botEvents.dispatchEvent(new CustomEvent("botMove", { detail: e.data.bestMove }));
           botEvents.dispatchEvent(new CustomEvent("botEvaluation", { detail: e.data }));
           break;
