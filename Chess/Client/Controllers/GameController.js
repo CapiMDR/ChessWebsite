@@ -15,7 +15,9 @@ botEvents.addEventListener("botMove", (e) => {
 });
 
 export class GameController {
-  constructor(startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+  constructor(
+    startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+  ) {
     this.gameMode = window.gameMode;
     this.startFEN = startFEN;
 
@@ -32,8 +34,12 @@ export class GameController {
     this.engine.setTimers(this.whiteTimer, this.blackTimer);
 
     //Listening to timer events
-    this.whiteTimer.addEventListener("timeout", () => this.handleLocalTimeout(white));
-    this.blackTimer.addEventListener("timeout", () => this.handleLocalTimeout(black));
+    this.whiteTimer.addEventListener("timeout", () =>
+      this.handleLocalTimeout(white)
+    );
+    this.blackTimer.addEventListener("timeout", () =>
+      this.handleLocalTimeout(black)
+    );
 
     networkEvents.addEventListener("startGame", () => {
       this.handleGameStart();
@@ -46,7 +52,8 @@ export class GameController {
   handleLocalTimeout(color) {
     //Ignore local time outs if playing online (wait for server to notify game over)
     if (this.gameMode == "online") return;
-    const result = color === white ? GameResult.whiteTimeOut : GameResult.blackTimeOut;
+    const result =
+      color === white ? GameResult.whiteTimeOut : GameResult.blackTimeOut;
     this.handleGameEnd(result);
   }
 
@@ -60,15 +67,24 @@ export class GameController {
     this.engine.timers[white].stop();
     this.engine.timers[black].stop();
     this.engine.gameIsOver = true;
-    gameEvents.dispatchEvent(new CustomEvent("endGame", { detail: this.engine.result }));
+    gameEvents.dispatchEvent(
+      new CustomEvent("endGame", { detail: this.engine.result })
+    );
   }
 
   //Any move received is played on the local board
   playMoveLocally(move, shouldPlaySounds = true) {
     //TODO: Allow for move undoing/redoing during the game and resynching the board when a new move arrives
-    gameEvents.dispatchEvent(new CustomEvent("movePlayed", { detail: { move: move, shouldPlaySounds } }));
+    gameEvents.dispatchEvent(
+      new CustomEvent("movePlayed", {
+        detail: { move: move, shouldPlaySounds },
+      })
+    );
     this.engine.playMove(move, false);
-    if (this.engine.inCheck) gameEvents.dispatchEvent(new CustomEvent("inCheck", { detail: { shouldPlaySounds } }));
+    if (this.engine.inCheck)
+      gameEvents.dispatchEvent(
+        new CustomEvent("inCheck", { detail: { shouldPlaySounds } })
+      );
 
     //Handle local game end (only when not playing online as that should stay server-authoritative)
     if (this.gameMode == "online") return;
@@ -89,7 +105,10 @@ export class GameController {
   }
 
   gameIsOver() {
-    return this.engine.result != GameResult.starting && this.engine.result != GameResult.inProgress;
+    return (
+      this.engine.result != GameResult.starting &&
+      this.engine.result != GameResult.inProgress
+    );
   }
 
   //Imports a game written in UCI format (ex e2e4)
@@ -128,20 +147,38 @@ export class GameController {
   undoMove() {
     if (!gameController.gameIsOver()) return;
     if (gameController.engine.moveHistory.length == 0) return;
-    const moveToUndo = gameController.engine.moveHistory[gameController.engine.moveHistory.length - 1];
+    const moveToUndo =
+      gameController.engine.moveHistory[
+        gameController.engine.moveHistory.length - 1
+      ];
     gameController.engine.undoMove();
-    gameEvents.dispatchEvent(new CustomEvent("moveUndo", { detail: { move: moveToUndo } }));
-    if (gameController.engine.inCheck) gameEvents.dispatchEvent(new CustomEvent("inCheck", { detail: { shouldPlaySounds: true } }));
+    gameEvents.dispatchEvent(
+      new CustomEvent("moveUndo", { detail: { move: moveToUndo } })
+    );
+    if (gameController.engine.inCheck)
+      gameEvents.dispatchEvent(
+        new CustomEvent("inCheck", { detail: { shouldPlaySounds: true } })
+      );
   }
 
   redoMove() {
     if (!gameController.gameIsOver()) return;
     if (gameController.engine.redoHistory.length == 0) return;
-    const moveToRedo = gameController.engine.redoHistory[gameController.engine.redoHistory.length - 1];
+    const moveToRedo =
+      gameController.engine.redoHistory[
+        gameController.engine.redoHistory.length - 1
+      ];
 
-    gameEvents.dispatchEvent(new CustomEvent("movePlayed", { detail: { move: moveToRedo, shouldPlaySounds: true } }));
+    gameEvents.dispatchEvent(
+      new CustomEvent("movePlayed", {
+        detail: { move: moveToRedo, shouldPlaySounds: true },
+      })
+    );
     gameController.engine.redoMove();
-    if (gameController.engine.inCheck) gameEvents.dispatchEvent(new CustomEvent("inCheck", { detail: { shouldPlaySounds: true } }));
+    if (gameController.engine.inCheck)
+      gameEvents.dispatchEvent(
+        new CustomEvent("inCheck", { detail: { shouldPlaySounds: true } })
+      );
   }
 }
 
