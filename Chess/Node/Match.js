@@ -7,7 +7,10 @@ import { matchManager } from "./MatchManager.js";
 import { saveGameToDB } from "./MatchStorage.js"; //save matches in date base
 
 export class Match {
-  constructor(id, startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+  constructor(
+    id,
+    startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+  ) {
     this.ID = id;
     this.startFEN = startFEN; //Storing startFEN to generate PGN later
     this.engine = new Engine(startFEN);
@@ -19,17 +22,26 @@ export class Match {
     this.colorAssignments = { [white]: null, [black]: null }; //Colors occupied by players currently in the match (can change before game starts if a player disconnects)
     this.originalPlayers = { [white]: null, [black]: null }; //Players that started the game for handling reconnects
 
-    this.whiteTimer.addEventListener("timeout", () => this.handleTimeout(white));
-    this.blackTimer.addEventListener("timeout", () => this.handleTimeout(black));
+    this.whiteTimer.addEventListener("timeout", () =>
+      this.handleTimeout(white)
+    );
+    this.blackTimer.addEventListener("timeout", () =>
+      this.handleTimeout(black)
+    );
   }
 
   assignColor(player) {
     //If this game has started, only allow the players who started it to get a color, otherwise assign spectator
     if (this.gameHasStarted()) {
       for (const color of [white, black]) {
-        if (this.originalPlayers[color] && this.originalPlayers[color].id === player.id) {
+        if (
+          this.originalPlayers[color] &&
+          this.originalPlayers[color].id === player.id
+        ) {
           this.colorAssignments[color] = player;
-          console.log(`Original ${color === white ? "white" : "black"} reconnected`);
+          console.log(
+            `Original ${color === white ? "white" : "black"} reconnected`
+          );
           return color;
         }
       }
@@ -50,16 +62,26 @@ export class Match {
   onPlayerJoin(socket, player) {
     const assignedColor = this.assignColor(player);
     //Tell client which match they joined and as which color
-    respondToClient(socket, { type: "joinMatch", matchID: this.ID, color: assignedColor });
+    respondToClient(socket, {
+      type: "joinMatch",
+      matchID: this.ID,
+      color: assignedColor,
+    });
 
     //Sync joining player's game to server's game if a reconnect
     if (this.gameHasStarted()) {
       respondToClient(socket, {
         type: "startGame",
         matchID: this.ID,
-        players: { white: this.colorAssignments[white], black: this.colorAssignments[black] },
+        players: {
+          white: this.colorAssignments[white],
+          black: this.colorAssignments[black],
+        },
       });
-      respondToClient(socket, { type: "syncGame", gameStatus: this.getGameStatus() });
+      respondToClient(socket, {
+        type: "syncGame",
+        gameStatus: this.getGameStatus(),
+      });
       return;
     }
 
@@ -69,7 +91,10 @@ export class Match {
       sendToAllClients({
         type: "startGame",
         matchID: this.ID,
-        players: { white: this.colorAssignments[white], black: this.colorAssignments[black] },
+        players: {
+          white: this.colorAssignments[white],
+          black: this.colorAssignments[black],
+        },
       });
     }
   }
@@ -95,7 +120,9 @@ export class Match {
     const status = this.getGameStatus();
     if (resignedPlayer) {
       const whiteResigned = this.originalPlayers[white].id == resignedPlayer.id;
-      status.gameResult = whiteResigned ? GameResult.whiteResigned : GameResult.blackResigned;
+      status.gameResult = whiteResigned
+        ? GameResult.whiteResigned
+        : GameResult.blackResigned;
       this.engine.result = status.gameResult;
     }
 
@@ -107,7 +134,13 @@ export class Match {
     //Generate PGN and save
     const pgn = this.generatePGN();
 
-    saveGameToDB(this.ID, this.originalPlayers[white], this.originalPlayers[black], this.engine.result, pgn);
+    saveGameToDB(
+      this.ID,
+      this.originalPlayers[white],
+      this.originalPlayers[black],
+      this.engine.result,
+      pgn
+    );
   }
 
   generatePGN() {
@@ -136,17 +169,21 @@ export class Match {
 
   handleReceivedMove(move) {
     if (!this.isLegalMove(move)) return;
+    this.engine.playMove(move, false);
+
     const status = this.getGameStatus();
-    sendToAllClients({ type: "move", matchID: this.ID, move: move, gameStatus: status });
+    sendToAllClients({
+      type: "move",
+      matchID: this.ID,
+      move: move,
+      gameStatus: status,
+    });
     if (this.gameIsOver()) this.endGame();
   }
 
   isLegalMove(clientMove) {
     for (let move of this.engine.moves) {
-      if (move == clientMove) {
-        this.engine.playMove(clientMove, false);
-        return true;
-      }
+      if (move == clientMove) return true;
     }
     console.log("Illegal move " + Move.toString(clientMove));
     return false;
@@ -154,7 +191,8 @@ export class Match {
 
   handleTimeout(color) {
     if (this.gameIsOver()) return;
-    this.engine.result = color === white ? GameResult.whiteTimeOut : GameResult.blackTimeOut;
+    this.engine.result =
+      color === white ? GameResult.whiteTimeOut : GameResult.blackTimeOut;
     this.endGame();
   }
 
@@ -167,7 +205,10 @@ export class Match {
   }
 
   gameIsOver() {
-    return this.engine.result !== GameResult.starting && this.engine.result !== GameResult.inProgress;
+    return (
+      this.engine.result !== GameResult.starting &&
+      this.engine.result !== GameResult.inProgress
+    );
   }
 
   getGameStatus() {

@@ -7,7 +7,17 @@ import { MoveGenerator } from "./MoveGenerator.js";
 import { Piece } from "./Piece.js";
 import { BBUtil } from "./BBUtil.js";
 import { BoardUtil } from "./BoardUtil.js";
-import { standardPieceValues, white, black, none, pawn, knight, bishop, rook, queen } from "./Constants.js";
+import {
+  standardPieceValues,
+  white,
+  black,
+  none,
+  pawn,
+  knight,
+  bishop,
+  rook,
+  queen,
+} from "./Constants.js";
 
 export class Engine {
   constructor(FEN) {
@@ -29,8 +39,14 @@ export class Engine {
     //Keeps the amount of pieces that have been captured for either color indexed by piece (see Piece.js for explanation)
     this.capturedPieceCounts = new Array(15).fill(0);
     //Initial material value for both colors
-    this.whiteMaterial = this.board.getColorMaterial(white, standardPieceValues);
-    this.blackMaterial = this.board.getColorMaterial(black, standardPieceValues);
+    this.whiteMaterial = this.board.getColorMaterial(
+      white,
+      standardPieceValues
+    );
+    this.blackMaterial = this.board.getColorMaterial(
+      black,
+      standardPieceValues
+    );
   }
 
   setTimers(whiteTimer, blackTimer) {
@@ -50,17 +66,26 @@ export class Engine {
     this.inCheck = this.moveGenerator.inCheck;
     const plyCounter = this.board.plyCounter;
 
-    this.whiteMaterial = this.board.getColorMaterial(white, standardPieceValues);
-    this.blackMaterial = this.board.getColorMaterial(black, standardPieceValues);
+    this.whiteMaterial = this.board.getColorMaterial(
+      white,
+      standardPieceValues
+    );
+    this.blackMaterial = this.board.getColorMaterial(
+      black,
+      standardPieceValues
+    );
 
     //Checking game result after every move
     if (this.moves.length == 0) {
-      this.result = this.inCheck ? this.getCheckmateResult() : GameResult.stalemate;
+      this.result = this.inCheck
+        ? this.getCheckmateResult()
+        : GameResult.stalemate;
     }
 
     if (plyCounter >= 100) this.result = GameResult.fiftyMoveRule;
     if (this.isThreefoldRepetition()) this.result = GameResult.drawByRepetition;
-    if (this.isInsufficientMaterial()) this.result = GameResult.insufficientMaterial;
+    if (this.isInsufficientMaterial())
+      this.result = GameResult.insufficientMaterial;
     this.manageTimers();
   }
 
@@ -93,7 +118,9 @@ export class Engine {
 
     const multiplier = undoingMove == false ? 1 : -1;
     const capturedPieceClr = Piece.clr(capturedPiece);
-    this.capturedPieceCounts[Piece.newPiece(capturedPieceType, capturedPieceClr)] += 1 * multiplier;
+    this.capturedPieceCounts[
+      Piece.newPiece(capturedPieceType, capturedPieceClr)
+    ] += 1 * multiplier;
   }
 
   //Redoes the last undone move
@@ -117,7 +144,8 @@ export class Engine {
     if (this.result == GameResult.inProgress) {
       if (currentTurnTimer != undefined) currentTurnTimer.play();
       //Since pausing increments the time, only pause the second clock after its first move (second clock hasn't been started anyways)
-      if (otherTimer != undefined && this.moveHistory.length > 0) otherTimer.pause();
+      if (otherTimer != undefined && this.moveHistory.length > 0)
+        otherTimer.pause();
     } else {
       if (currentTurnTimer != undefined) currentTurnTimer.stop();
       if (otherTimer != undefined) otherTimer.stop();
@@ -125,7 +153,9 @@ export class Engine {
   }
 
   getCheckmateResult() {
-    return this.clrToMove == white ? GameResult.blackCheckmated : GameResult.whiteCheckmated;
+    return this.clrToMove == white
+      ? GameResult.blackCheckmated
+      : GameResult.whiteCheckmated;
   }
 
   isThreefoldRepetition() {
@@ -145,10 +175,12 @@ export class Engine {
     const blackPieceCount = pieceCounts[black][0];
     const allPieceCount = whitePieceCount + blackPieceCount;
     const pawnsCount = pieceCounts[white][pawn] + pieceCounts[black][pawn];
-    const knightsCount = pieceCounts[white][knight] + pieceCounts[black][knight];
+    const knightsCount =
+      pieceCounts[white][knight] + pieceCounts[black][knight];
     const whiteBishopsCount = pieceCounts[white][bishop];
-    const blackBishopsCount = pieceCounts[white][bishop];
-    const bishopsCount = pieceCounts[white][bishop] + pieceCounts[black][bishop];
+    const blackBishopsCount = pieceCounts[black][bishop];
+    const bishopsCount =
+      pieceCounts[white][bishop] + pieceCounts[black][bishop];
     const rooksCount = pieceCounts[white][rook] + pieceCounts[black][rook];
     const queensCount = pieceCounts[white][queen] + pieceCounts[black][queen];
 
@@ -172,12 +204,19 @@ export class Engine {
 
     //King + bishop vs king + bishop = draw (when they are the same color only)
     //2 kings + 2 bishops
-    if (allPieceCount == 4 && whiteBishopsCount == 1 && blackBishopsCount == 1) {
+    if (
+      allPieceCount == 4 &&
+      whiteBishopsCount == 1 &&
+      blackBishopsCount == 1
+    ) {
       //Get both bishop squares
       const whiteBishopSqr = BBUtil.getLSBIndex(this.board.white.bishops);
       const blackBishopSqr = BBUtil.getLSBIndex(this.board.black.bishops);
       //If they are on the same square color return true, otherwise false
-      return BoardUtil.isLightSquare(whiteBishopSqr) == BoardUtil.isLightSquare(blackBishopSqr);
+      return (
+        BoardUtil.isLightSquare(whiteBishopSqr) ==
+        BoardUtil.isLightSquare(blackBishopSqr)
+      );
     }
 
     return false;
@@ -191,8 +230,14 @@ export class Engine {
     this.redoHistory = [];
 
     this.capturedPieceCounts = new Array(15).fill(0);
-    this.whiteMaterial = this.board.getColorMaterial(white, standardPieceValues);
-    this.blackMaterial = this.board.getColorMaterial(black, standardPieceValues);
+    this.whiteMaterial = this.board.getColorMaterial(
+      white,
+      standardPieceValues
+    );
+    this.blackMaterial = this.board.getColorMaterial(
+      black,
+      standardPieceValues
+    );
 
     this.result = GameResult.starting;
   }
@@ -206,7 +251,8 @@ export class Engine {
     if (parts.length < 3) return "Missing castling rights (- if none)";
     if (parts.length < 4) return "Missing En passant file (- if none)";
 
-    const [placement, activeColor, castling, enPassant, halfmove, fullmove] = parts;
+    const [placement, activeColor, castling, enPassant, halfmove, fullmove] =
+      parts;
 
     const rows = placement.split("/");
     if (rows.length != 8) return "Found: " + rows.length + " rows (expected 8)"; //Need 8 rows
