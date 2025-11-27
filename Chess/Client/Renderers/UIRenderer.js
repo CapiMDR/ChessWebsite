@@ -11,7 +11,7 @@ import { networkEvents } from "../Network/ClientNetwork.js";
 // ====== Sizing Constants ======
 const windowHeight = window.innerHeight;
 const UIHorizontalSize = windowHeight * 0.4;
-const UIVerticalSize = windowHeight * 0.5;
+const UIVerticalSize = windowHeight * 0.4;
 const innerUIHorizontalSize = UIHorizontalSize * 0.85;
 const innerUIVerticalSize = UIVerticalSize * 0.85;
 

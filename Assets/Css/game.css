@@ -85,9 +85,91 @@ canvas {
   gap: 10px;
 }
 
+#rightColumn {
+  height: 70vh;
+  gap: 2%;
+  display: flex;
+  flex-direction: column;
+}
+
+#rightColumn.no-chat {
+  justify-content: center;
+}
+
 .styledTextField {
   width: 250px;
   border-radius: 1%;
+}
+
+#chatContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  width: 100%;
+  height: 30vh;
+  overflow: hidden;
+}
+
+#chatList {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
+}
+
+#chatList li {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #eee;
+  font-size: 0.95rem;
+  max-width: 85%;
+}
+
+#chatList li.me {
+  align-self: flex-end;
+  background: rgba(100, 150, 255, 0.12);
+  color: #fff;
+}
+#chatList li.other {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+#chatInputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+#chatInputRow .styledTextField {
+  flex: 1 1 auto;
+  width: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+#chatSendBTN {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+}
+
+#chatSendBTN:active {
+  transform: translateY(1px);
 }
 
 #gameOptionsPanel {

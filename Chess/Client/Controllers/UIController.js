@@ -8,6 +8,7 @@ import { none, enPassantFlag, castleFlag } from "../../Shared/Constants.js";
 import { botEvents } from "./BotController.js";
 import { gameController, gameEvents, engine } from "./GameController.js";
 import { resignGame, getHint } from "./MainController.js";
+import { sendToServer } from "../Network/ClientNetwork.js";
 import { capture_Sound, move_Sound, check_Sound, gameOver_Sound, start_Sound, castle_Sound } from "../Renderers/BoardRenderer.js";
 
 export class UIController {
@@ -18,6 +19,12 @@ export class UIController {
       resignBtn.classList.remove("btn-styled-disabled");
       resignBtn.classList.add("btn-styled");
       resignBtn.classList.add("scalable");
+    }
+
+    const chatSendBTN = document.getElementById("chatSendBTN");
+    if (chatSendBTN) {
+      chatSendBTN.classList.remove("btn-styled-disabled");
+      chatSendBTN.classList.add("btn-styled");
     }
     this.playSound("Start");
   }
@@ -149,17 +156,48 @@ const actions = {
   getHint: () => getHint(),
   undoMove: () => gameController.undoMove(),
   redoMove: () => gameController.redoMove(),
+  sendChat: () => sendChatMessage(),
 };
 
-//Adding a listener to the html buttons to handle their respective functions
 document.addEventListener("DOMContentLoaded", () => {
+  //Adding a listener to the html buttons to handle their respective functions
   document.querySelectorAll("[data-action]").forEach((button) => {
     const action = button.dataset.action;
     const handler = actions[action];
     if (handler) button.addEventListener("click", handler);
     else console.warn("Unhandled button action: ", action);
   });
+
+  //Adding a listener for the "enter" key to the chat box
+  const chatInput = document.getElementById("chatTXT");
+  if (!chatInput) return;
+  chatInput.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      sendChatMessage();
+    }
+  });
 });
+
+function sendChatMessage() {
+  if (!gameController.gameInProgress() && !gameController.gameIsOver()) return;
+  const chatInput = document.getElementById("chatTXT");
+  const msg = chatInput.value.trim();
+  if (!msg) return;
+  sendToServer({ type: "chatMessage", chatMsg: msg });
+  addToChatList(msg, "me");
+  chatInput.value = "";
+  chatInput.focus();
+}
+
+export function addToChatList(msg, sender) {
+  const li = document.createElement("li");
+  li.className = sender;
+  li.textContent = msg;
+  const chatList = document.getElementById("chatList");
+  chatList.appendChild(li);
+  chatList.scrollTop = chatList.scrollHeight;
+}
 
 //Listen for bot evaluations and stop the glowing button
 botEvents.addEventListener("botEvaluation", () => {

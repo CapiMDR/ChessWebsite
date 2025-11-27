@@ -75,7 +75,20 @@
           <?php endif; ?>
         </div>
       </div>
-        <div id="UIContainer"></div>
+        <div id="rightColumn" class="<?php echo ($mode !== 'online') ? 'no-chat' : ''; ?>">
+          <div id="UIContainer"></div>
+          <?php if ($mode === 'online'): ?>
+            <div class="styledBox" id="chatContainer">
+                <ul id="chatList"></ul>
+                <div id="chatInputRow">
+                    <input type="text" id="chatTXT" class="styledTextField" placeholder="Type a message...">
+                    <button id="chatSendBTN" class="btn-styled-disabled" data-action="sendChat" type="button">
+                        <span class="material-icons">send</span>
+                    </button>
+                </div>
+            </div>
+          <?php endif; ?>
+      </div>
       </div>
     </div>
     <main></main>
