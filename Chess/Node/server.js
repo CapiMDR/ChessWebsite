@@ -110,6 +110,10 @@ io.on("connection", async (socket) => {
         matchManager.onResignation(player, msg.matchID);
         break;
 
+      case "chatMessage":
+        sendToAllButSender(socket, { type: "chatMessage", chatMsg: msg.chatMsg, matchID: msg.matchID });
+        break;
+
       default:
         console.log(`Invalid message type from client: ${msg.type}`);
         respondToClient(socket, { type: "error", message: "Invalid message type" });
@@ -151,11 +155,20 @@ io.on("connection", async (socket) => {
   }
 });
 
+export function sendToAllButSender(socket, msgContent) {
+  const matchID = msgContent.matchID;
+  if (!matchID) {
+    console.warn("[!] sendToAllButSender called without matchID, message type: " + msgContent.type);
+    return;
+  }
+  socket.broadcast.to(matchID).emit("message", msgContent);
+}
+
 //Send a message to all clients in a specific match (room)
 export function sendToAllClients(msgContent) {
   const matchID = msgContent.matchID;
   if (!matchID) {
-    console.warn("sendToAllClients called without matchID");
+    console.warn("[!] sendToAllClients called without matchID, message type: " + msgContent.type);
     return;
   }
   io.to(matchID).emit("message", msgContent);

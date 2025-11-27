@@ -4,6 +4,7 @@
 
 import { networkEvents } from "./ClientNetwork.js";
 import { gameController } from "../Controllers/GameController.js";
+import { addToChatList } from "../Controllers/UIController.js";
 import { clientState } from "../State/ClientState.js";
 
 //Events from server
@@ -11,6 +12,7 @@ const networkEventHandlers = {
   joinMatch: joinServerGame,
   move: onMove,
   syncGame: onSyncGame,
+  chatMessage: onChatMessage,
 };
 
 //Add all event listener from the serverEventHandlers automatically
@@ -51,4 +53,8 @@ function syncGameWithServer(gameStatus) {
   gameController.engine.result = gameStatus.gameResult;
   gameController.whiteTimer.remainingTime = gameStatus.whiteTime;
   gameController.blackTimer.remainingTime = gameStatus.blackTime;
+}
+
+function onChatMessage(event) {
+  addToChatList(event.detail.chatMsg, "other");
 }
