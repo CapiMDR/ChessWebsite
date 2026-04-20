@@ -87,13 +87,10 @@ canvas {
 
 #rightColumn {
   height: 70vh;
+  width: 20vw;
   gap: 2%;
   display: flex;
   flex-direction: column;
-}
-
-#rightColumn.no-chat {
-  justify-content: center;
 }
 
 .styledTextField {
@@ -106,9 +103,13 @@ canvas {
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  width: 100%;
+  max-width: 100%;
   height: 30vh;
   overflow: hidden;
+}
+
+#rightColumn.no-chat {
+  justify-content: center;
 }
 
 #chatList {
@@ -131,6 +132,9 @@ canvas {
   color: #eee;
   font-size: 0.95rem;
   max-width: 85%;
+  min-width: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 #chatList li.me {
@@ -232,7 +236,10 @@ canvas {
   gap: 8px;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease;
 }
 
 .option-btn:hover {
