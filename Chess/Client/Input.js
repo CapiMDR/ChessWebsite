@@ -79,12 +79,12 @@ function searchMoves(moveFrom, moveTo) {
     if (moveStartSqr !== moveFrom || moveTargetSqr !== moveTo) continue;
 
     if (Move.isPromotion(move)) {
-      const x = clientState.flipBoard ? boardSize - moveToFile * squareSize - squareSize : moveToFile * squareSize;
-      const y = clientState.flipBoard ? boardSize - moveToRank * squareSize - squareSize : moveToRank * squareSize;
+      const promotionDrawX = clientState.flipBoard ? boardSize - moveToFile * squareSize - squareSize : moveToFile * squareSize;
+      const promotionDrawY = clientState.flipBoard ? boardSize - moveToRank * squareSize - squareSize : moveToRank * squareSize;
 
       promotionMenu.active = true;
-      promotionMenu.x = x;
-      promotionMenu.y = y;
+      promotionMenu.drawX = promotionDrawX;
+      promotionMenu.drawY = promotionDrawY;
       promotionMenu.move = move;
       return undefined;
     }
@@ -94,18 +94,16 @@ function searchMoves(moveFrom, moveTo) {
   return undefined;
 }
 
-function handlePromotionClick(file, rank) {
+function handlePromotionClick(clickedFile, clickedRank) {
   resetSelection();
-  const { x, y, options, move } = promotionMenu;
+  const { options, move } = promotionMenu;
+  const promotionSquare = Move.targetSqr(move);
+  const promotionMenuFile = BoardUtil.squareToFile(promotionSquare);
 
-  const menuFile = Math.floor(x / squareSize);
-  const menuRank = Math.floor(y / squareSize);
-
-  const adjustedFile = clientState.flipBoard ? 7 - file : file;
-  const adjustedRank = clientState.flipBoard ? 7 - rank : rank;
-
-  if (adjustedFile === menuFile) {
-    const optionIndex = adjustedRank - menuRank;
+  if (clickedFile === promotionMenuFile) {
+    const optionIndex = clientState.flipBoard
+      ? BoardUtil.squareToRank(promotionSquare) - clickedRank
+      : clickedRank - BoardUtil.squareToRank(promotionSquare);
     if (optionIndex >= 0 && optionIndex < options.length) {
       const startSquare = Move.startSqr(move);
       const targetSquare = Move.targetSqr(move);
