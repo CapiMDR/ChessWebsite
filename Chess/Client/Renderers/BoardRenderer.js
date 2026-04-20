@@ -32,7 +32,7 @@ export let capture_Sound, move_Sound, check_Sound, gameOver_Sound, start_Sound, 
 
 // ====== State ======
 let playerNames = { white: null, black: null };
-export let promotionMenu = { active: false, x: 0, y: 0, move: null, options: [5, 4, 3, 2] };
+export let promotionMenu = { active: false, drawX: 0, drawY: 0, move: null, options: [5, 4, 3, 2] };
 let botEvaluation = { bestMove: null, evaluation: 0, pv: null };
 let currentEval = 0;
 
@@ -244,7 +244,7 @@ function drawCheckBubble(p, engine) {
 }
 
 function drawPromotionUI(p, engine) {
-  const { x, y, options } = promotionMenu;
+  const { drawX, drawY, options } = promotionMenu;
   p.fill(255);
   p.stroke(0);
   p.strokeWeight(2);
@@ -252,9 +252,9 @@ function drawPromotionUI(p, engine) {
   p.imageMode(p.CENTER);
 
   for (let i = 0; i < options.length; i++) {
-    p.rect(x, y + i * squareSize, squareSize, squareSize);
+    p.rect(drawX, drawY + i * squareSize, squareSize, squareSize);
     const img = getImageFromPiece(Piece.newPiece(options[i], engine.clrToMove));
-    p.image(img, x + squareSize / 2, y + i * squareSize + squareSize / 2, squareSize, squareSize);
+    p.image(img, drawX + squareSize / 2, drawY + i * squareSize + squareSize / 2, squareSize, squareSize);
   }
 }
 
