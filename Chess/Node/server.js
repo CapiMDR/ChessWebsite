@@ -16,6 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();
 
+//**The routes to your https certificates go here**
 const options = {
   key: fs.readFileSync("Certs/server.key"),
   cert: fs.readFileSync("Certs/server.crt"),
