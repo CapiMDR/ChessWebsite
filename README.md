@@ -75,18 +75,30 @@ Before running the project, ensure the following software is installed:
 * npm
 * XAMPP
 * MariaDB (included with XAMPP)
-* SSL/TLS certificate and private key for HTTPS hosting
+* OpenSSL (for generating development certificates)
 
 ### Clone the Repository
 
+The project must be placed inside XAMPP's web publishing directory, which is typically:
+
+```text
+Windows: C:\xampp\htdocs\
+Linux: /opt/lampp/htdocs/
+```
+
+Clone the repository into the publishing directory:
+
 ```bash
+cd <xampp-htdocs-directory>
 git clone https://github.com/CapiMDR/ChessWebsite.git
-cd ChessWebsite
 ```
 
 ### Install Dependencies
 
+Navigate to the Node.js backend directory and install the required packages:
+
 ```bash
+cd ChessWebsite/chess/node
 npm install
 ```
 
@@ -114,13 +126,37 @@ DB_NAME=chesswebsite
 
 ### Configure HTTPS
 
-This application is designed to be served over **HTTPS**. Before starting the server, you must provide your own SSL/TLS certificate and private key.
+This application is designed to be served over **HTTPS**. You must provide an SSL/TLS certificate and private key before starting the server.
 
-1. Obtain or generate an SSL certificate.
-2. Place your certificate and private key files in a secure location on the server.
-3. Update the HTTPS configuration in the Node.js server to point to your certificate files.
+#### Creating a Self-Signed Certificate (Development)
 
-Example:
+Create a directory for your certificates:
+
+```bash
+mkdir certs
+```
+
+Generate a self-signed certificate using OpenSSL:
+
+```bash
+openssl req -x509 -newkey rsa:4096 \
+-keyout certs/private.key \
+-out certs/certificate.crt \
+-days 365 \
+-nodes
+```
+
+During the setup process, OpenSSL will prompt for certificate information such as country, organization, and common name. For local development, the default values are usually sufficient.
+
+Your generated files should look like:
+
+```text
+certs/
+├── private.key
+└── certificate.crt
+```
+
+Update the HTTPS configuration in the Node.js server to point to your certificate files:
 
 ```javascript
 const httpsOptions = {
@@ -129,26 +165,27 @@ const httpsOptions = {
 };
 ```
 
-> **Note:** Self-signed certificates may be used for development environments, but a trusted certificate authority (CA) certificate is recommended for production deployments.
+> **Note:** Self-signed certificates are intended for development and testing only. For production deployments, use certificates issued by a trusted Certificate Authority (CA).
 
 ### Start the Application
 
 Start the Node.js server:
 
 ```bash
-cd chess/node
+cd ChessWebsite/chess/node
 node server.js
 ```
 
-Once running, access the application through your browser using HTTPS:
+Once running, access the application through your browser:
 
 ```text
 https://<your-server-ip>:3000
 ```
 
-If using a self-signed certificate, your browser may display a security warning that must be accepted before accessing the site.
+> **Note:** If using a self-signed certificate, your browser may display a security warning that must be accepted before accessing the site.
 
 ---
+
 
 ## Database Structure
 
