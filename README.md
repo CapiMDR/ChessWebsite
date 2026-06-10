@@ -2,6 +2,8 @@
 
 A modern online chess platform built with **p5.js**, **Node.js**, **XAMPP**, and **MariaDB**, featuring real-time online gameplay, account management, persistent match history, and a custom-built chess engine capable of AI gameplay and game analysis.
 
+You can try a barebones live version of the CapraStar AI hosted by p5.js! https://editor.p5js.org/brownmakey243/full/A80PMc3Xj
+
 ---
 
 ## Features
@@ -135,6 +137,7 @@ Create a directory for your certificates:
 ```bash
 mkdir certs
 ```
+> **Note:** You may also use the given certs/ directory as it comes preconfigured on the server.
 
 Generate a self-signed certificate using OpenSSL:
 
@@ -156,16 +159,22 @@ certs/
 └── certificate.crt
 ```
 
-Update the HTTPS configuration in the Node.js server to point to your certificate files:
+Update the HTTPS configuration in the server.js server to point to your certificate files:
+```text
+Chess/
+  └── Node/
+        └──server.js
+```
 
 ```javascript
 const httpsOptions = {
-    key: fs.readFileSync("certs/private.key"),
-    cert: fs.readFileSync("certs/certificate.crt")
+  key: fs.readFileSync("certs/private.key"),
+  cert: fs.readFileSync("certs/certificate.crt"),
 };
 ```
 
 > **Note:** Self-signed certificates are intended for development and testing only. For production deployments, use certificates issued by a trusted Certificate Authority (CA).
+
 
 ### Start the Application
 
