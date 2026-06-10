@@ -13,13 +13,19 @@ yarn-error.log*
 
 # SSL Certificates & Keys
 
-certs/
+certs/*
 *.key
 *.crt
 *.pem
 *.pfx
 *.p12
 *.csr
+
+# Generated Certificates Folder Placeholder
+
+!certs/.gitkeep
+!certs/README.md
+
 
 # Database Dumps & Backups
 
@@ -93,7 +99,3 @@ node_modules/.cache/
 
 *.sql.gz
 *.sql.zip
-
-# Generated Certificates Folder Placeholder
-
-!certs/.gitkeep
