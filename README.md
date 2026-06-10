@@ -20,7 +20,8 @@ You can try a barebones live version of the CapraStar AI hosted by p5.js! https:
 * Create and join online matches
 * Real-time game synchronization
 * Server-owned match management system
-* Player matchmaking and reconnect support
+* Player matchmaking and reconnecting support
+* Real-time chat system
 
 ### 👤 Account Management
 
