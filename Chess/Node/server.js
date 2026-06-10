@@ -16,10 +16,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();
 
-//**The routes to your https certificates go here**
+//**The routes to your https certificate and key go here**
 const options = {
-  key: fs.readFileSync("Certs/server.key"),
-  cert: fs.readFileSync("Certs/server.crt"),
+  key: fs.readFileSync("../../certs/server.key"),
+  cert: fs.readFileSync("../../certs/server.crt"),
 };
 
 //Get local ip automatically
@@ -52,7 +52,7 @@ app.use(
     origin: [`https://${localIP}`, `https://localhost`, `http://${localIP}`, `http://localhost`],
     methods: ["GET", "POST"],
     credentials: true,
-  })
+  }),
 );
 
 //Serving files to the clients
