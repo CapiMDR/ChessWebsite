@@ -10,7 +10,7 @@
     }
   ?>
   <head>
-    <title>Profile - Chess Website</title>
+    <title>Profile - CapraChess Arena</title>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/addons/p5.sound.min.js"></script>
     <link rel="stylesheet" type="text/css" href="../Assets/CSS/style.css">
@@ -55,7 +55,7 @@
                     </select>
                 </div>
             </div>
-            <form id="profileForm" action="/ChessWebsite/Chess/Client/gameIndex.php" method="POST">
+            <form id="profileForm" action="/CapraChessArena/Chess/Client/gameIndex.php" method="POST">
                 <input type="hidden" name="mode" id="gameMode" value="analyze">
                 <input type="hidden" name="pgn" id="movesList" value="">
                 <div id="historyList" class="history-list styledBox">

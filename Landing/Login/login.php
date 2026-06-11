@@ -9,7 +9,7 @@ if (isset($_SESSION['user'])){
 ?>
 <html lang="en">
   <head>
-    <title>Log in - Chess Website</title>
+    <title>Log in - CapraChess Arena</title>
     <meta charset="UTF-8">
     <link href="../../Assets/CSS/style.css" rel="stylesheet">
     <link href="../../Assets/CSS/login.css" rel="stylesheet">

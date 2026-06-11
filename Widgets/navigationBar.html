@@ -1,14 +1,11 @@
 <div id="navigation">
-  <a class="scalable" href="/ChessWebsite/Landing/index.php" id="homeLink">
-    <h1>Chess Website</h1>
+  <a class="scalable" href="/CapraChessArena/Landing/index.php" id="homeLink">
+    <h1>CapraChess Arena</h1>
   </a>
 
   <div id="navRight">
-    <?php 
-      $user = isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : 'Guest'; 
-      $initial = strtoupper(substr($user,0,1));
-    ?>
-    <form id="logoutForm" action="/ChessWebsite/Landing/logout.php" method="POST">
+    <?php $user = isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : 'Guest'; $initial = strtoupper(substr($user,0,1)); ?>
+    <form id="logoutForm" action="/CapraChessArena/Landing/logout.php" method="POST">
       <div id="userInfo">
         <div id="usernameContainer">
           <button id="userBtn" class="btn-navigation" type="button" onclick="toggleDropdown(event)">
@@ -34,7 +31,7 @@
     }
 
     function viewProfile() {
-      window.location.href = "/ChessWebsite/Landing/profile.php";
+      window.location.href = "/CapraChessArena/Landing/profile.php";
     }
 
     //Close when clicking outside

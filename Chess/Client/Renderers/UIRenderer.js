@@ -102,8 +102,8 @@ function drawUIText(p, engine) {
   const blackY = clientState.flipBoard ? (3 * p.height) / 4 + nameOffset : p.height / 4 - nameOffset;
 
   p.fill(150);
-  if (playerNames.white) p.text(playerNames.white, UIXCenter * 0.3, whiteY);
-  if (playerNames.black) p.text(playerNames.black, UIXCenter * 0.3, blackY);
+  if (playerNames.white) p.text(playerNames.white, UIXCenter, whiteY);
+  if (playerNames.black) p.text(playerNames.black, UIXCenter, blackY);
 }
 
 function drawUITimers(p, engine) {

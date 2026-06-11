@@ -14,7 +14,7 @@
     if($mode!="online" && $mode!="bot" && $mode!="local" && $mode!="analyze") $mode='local'; //Change to local if invalid game mode
   ?>
   <head>
-    <title>Playing Chess - Chess Website</title>
+    <title>Playing Chess - CapraChess Arena</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/addons/p5.sound.min.js"></script>

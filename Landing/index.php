@@ -10,7 +10,7 @@
     }
   ?>
   <head>
-    <title>Home - Chess Website</title>
+    <title>Home - CapraChess Arena</title>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/addons/p5.sound.min.js"></script>
     <link rel="stylesheet" type="text/css" href="../Assets/CSS/style.css">
@@ -31,7 +31,7 @@
       <div id="menuContainer">
         <div id="leftColumn" class="styledBox">
           <div id="menuBTNS">
-            <form id="gameForm" action="/ChessWebsite/Chess/Client/gameIndex.php" method="POST">
+            <form id="gameForm" action="/CapraChessArena/Chess/Client/gameIndex.php" method="POST">
               <input type="hidden" name="mode" id="gameMode" value="">
               <button class="btn-styled btn-large movable" type="button" onclick="setMode('online')">
                 <span class="material-icons">people</span>
