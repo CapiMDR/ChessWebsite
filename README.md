@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/CapraStar.png" height="400px" alt="icon-512">
+</p>
+
 # CapraChess Arena ♟️
 
 A modern online chess platform built with **p5.js**, **Node.js**, and **XAMPP**, featuring real-time online gameplay, account management, persistent match history, and a custom-built chess engine capable of AI gameplay and game analysis.
@@ -65,6 +69,97 @@ You can try a live demo of the CapraStar AI here: https://editor.p5js.org/brownm
 | Frontend                 | JavaScript    | ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)                          |
 | Graphics & Visualization | p5.js         | ![p5.js](https://img.shields.io/badge/p5.js-ED225D?style=for-the-badge&logo=p5dotjs&logoColor=white)                                       |
 | Chess Engine             | Custom Engine | ![Custom Chess Engine](https://img.shields.io/badge/Chess%20Engine-Custom-blueviolet?style=for-the-badge&logo=chessdotcom&logoColor=white) |
+
+---
+
+## Project Structure
+
+```text
+ChessWebsite/
+│
+├── Assets/
+│   ├── Css/                  # Stylesheets
+│   ├── data/                 # Static data files
+│   ├── Images/               # Images and icons
+│   ├── Sounds/               # Sound effects
+│   └── certs/                # SSL certificates
+│
+├── Chess/
+│   ├── CapraStar/            # Chess engine
+│   │   ├── CapraCore.js      # Engine core
+│   │   ├── CapraWorker.js    # Web Worker interface
+│   │   └── Book.txt          # Opening book
+│   │
+│   ├── Client/              # Frontend chess client
+│   │   ├── Controllers/     # Game controllers
+│   │   ├── Network/         # Client-server communication
+│   │   ├── Renderers/       # Board and UI rendering
+│   │   ├── State/           # Client state management
+│   │   ├── gameIndex.php    # Main game page
+│   │   ├── gameOptions.html # Game settings
+│   │   └── Input.js         # Input handling
+│   │
+│   ├── Server/                # Backend matchmaking server
+│   │   ├── db_connect.js
+│   │   ├── Match.js
+│   │   ├── MatchManager.js
+│   │   ├── MatchStorage.js
+│   │   ├── player_query.js
+│   │   ├── server.js
+│   │   └── package.json
+│   │
+│   └── Shared/              # Shared client/server chess logic
+│
+├── Landing/                 # Landing page
+├── Login/                   # Login system
+├── Register/                # Registration system
+│
+├── db_connect.php           # Database connection
+├── getHistory.php           # Match history API
+├── index.php                # Homepage
+├── logout.php               # Logout endpoint
+├── profile.js               # Profile functionality
+├── profile.php              # User profile page
+│
+└── Widgets/                 # Reusable UI widgets
+```
+
+---
+
+## Project Architecture
+
+```text
+┌──────────────────────────┐
+│      Landing Page        │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Authentication System    │
+│ Login / Register         │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│      Chess Client        │
+│ Board • UI • Network     │
+└────────────┬─────────────┘
+             │
+             ├──────────────► CapraStar Engine
+             │                (Singleplayer)
+             │
+             ▼
+┌──────────────────────────┐
+│ Matchmaking Server       │
+│ Node.js                  │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│ Database                 │
+│ Users • Matches • Stats  │
+└──────────────────────────┘
+```
 
 ---
 
@@ -137,6 +232,8 @@ Create a directory for your certificates:
 ```bash
 mkdir certs
 ```
+
+> **Note:** You may also use the given certs/ directory as it comes preconfigured on the server.
 
 > **Note:** You may also use the given certs/ directory as it comes preconfigured on the server.
 

@@ -9,6 +9,7 @@ Create a directory for your certificates:
 ```bash
 mkdir certs
 ```
+> **Note:** You may also use the given certs/ directory as it comes preconfigured on the server.
 
 Generate a self-signed certificate using OpenSSL:
 
@@ -30,7 +31,12 @@ certs/
 └── certificate.crt
 ```
 
-Update the HTTPS configuration in the Node.js server to point to your certificate files:
+Update the HTTPS configuration in the server.js server to point to your certificate files:
+```text
+Chess/
+  └── Node/
+        └──server.js
+```
 
 ```javascript
 const httpsOptions = {
