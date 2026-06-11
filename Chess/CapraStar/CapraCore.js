@@ -7,6 +7,7 @@ import { MoveGenerator } from "../Shared/MoveGenerator.js";
 
 /* 🐐 CapraStar - The Greatest of All Tactics 🐐 */
 /* This bot will for sure checkmaaaaate you */
+//V 9b (minus mobility eval)
 
 //CapraStar bot implementation
 export class CapraStar {
@@ -227,7 +228,8 @@ export class CapraStar {
 
   adjustMateScoreForStorage(score, ply) {
     if (this.isMateScore(score)) {
-      if (score > 0) return score + ply; //Sooner mate for us is bigger
+      if (score > 0)
+        return score + ply; //Sooner mate for us is bigger
       else return score - ply; //Sooner mate for opponent is smaller
     }
     return score;
@@ -235,7 +237,8 @@ export class CapraStar {
 
   adjustMateScoreForRetrieval(score, ply) {
     if (this.isMateScore(score)) {
-      if (score > 0) return score - ply; //Undo storage adjustment
+      if (score > 0)
+        return score - ply; //Undo storage adjustment
       else return score + ply;
     }
     return score;
@@ -650,16 +653,16 @@ export class CapraStar {
     this.isolatedPawnPenalty = 15;
     this.defendedPawnBonus = 5;
     this.doubledPawnsPenalty = 20;
-    this.kingShieldBonus = 10;
+    this.kingShieldBonus = 5;
     this.myTurnBonus = 10;
     this.bishopPairBonus = 30;
     this.kingMobilityPenalty = 1;
     this.rookOpenFileBonus = 30;
     this.connectedRooksBonus = 20;
-    this.blockedPawnPenalty = 5;
-    this.openFileNearKingPenalty = 50 * 0;
+    this.blockedPawnPenalty = 15;
+    this.openFileNearKingPenalty = 5;
     this.mobilityWeight = 2;
-    this.outpostBonus = 20;
+    this.outpostBonus = 10;
 
     this.mateScore = 10000000;
     this.maxExtensions = 16;
